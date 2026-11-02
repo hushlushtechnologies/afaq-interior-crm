@@ -1,0 +1,53 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Testing
+/coverage
+/playwright-report/
+/test-results/
+/blob-report/
+
+# Next.js
+/.next/
+/out/
+
+# Build output
+/build
+
+# Local files
+.DS_Store
+Thumbs.db
+*.pem
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment files
+.env*
+!.env.example
+
+# Vercel
+.vercel
+
+# TypeScript generated files
+*.tsbuildinfo
+next-env.d.ts
+# Supabase local development
+.env.local
+.env.*.local
+!.env.example
+supabase/.temp/
+supabase/.branches/
+
+# Local authenticated browser tests
+playwright/.auth/
