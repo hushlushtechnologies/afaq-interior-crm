@@ -20,6 +20,7 @@ const test = base.extend<{
   },
 });
 
+
 test.use({
   storageState: {
     cookies: [],
@@ -66,13 +67,18 @@ test('Super Admin can assign and remove an existing account role', async ({ page
     exact: true,
   });
 
+  const financeInput = page.locator(`input[id="${await finance.getAttribute('id')}"]`);
+
   await expect(finance).not.toBeChecked();
-  await finance.check();
+  await finance.click();
 
   const assignDialog = page.getByRole('dialog', {
     name: 'Assign Finance Officer?',
     exact: true,
   });
+
+  // The modal hides background controls from the accessibility tree.
+  await expect(financeInput).not.toBeChecked();
 
   await expect(
     assignDialog.getByRole('button', {
@@ -91,12 +97,14 @@ test('Super Admin can assign and remove an existing account role', async ({ page
   await expect(assignDialog).toHaveCount(0);
   await expect(finance).toBeChecked();
 
-  await finance.uncheck();
+  await finance.click();
 
   const removeDialog = page.getByRole('dialog', {
     name: 'Remove Finance Officer?',
     exact: true,
   });
+
+  await expect(financeInput).toBeChecked();
 
   await removeDialog
     .getByRole('button', {
@@ -141,7 +149,7 @@ test('Sales navigation excludes Finance and role administration', async ({ page,
       exact: true,
     });
 
-    await expect(
+     await expect(
       modules.getByRole('link', {
         name: 'Leads',
         exact: true,
@@ -169,7 +177,7 @@ test('Sales navigation excludes Finance and role administration', async ({ page,
       }),
     ).toBeVisible();
 
-    await expect(
+     await expect(
       rail.getByRole('link', {
         name: 'Finance',
         exact: true,
@@ -198,7 +206,7 @@ test('Sales navigation excludes Finance and role administration', async ({ page,
     }),
   ).toHaveCount(0);
 
-  await page.keyboard.press('Escape');
+   await page.keyboard.press('Escape');
 
   await page.goto('/settings/access');
 
@@ -215,4 +223,79 @@ test('Sales navigation excludes Finance and role administration', async ({ page,
       exact: true,
     }),
   ).toHaveCount(0);
+});
+
+
+test('direct role RPCs reject anonymous callers and Sales privilege escalation', async ({
+  localAuth,
+}) => {
+  const { createClient } = await import('@supabase/supabase-js');
+  const actor = await localAuth.createAccount({ role: 'sales_executive' });
+  const target = await localAuth.createAccount({ role: 'sales_executive' });
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)!;
+  const client = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  try {
+    const anonymous = await client.rpc('crm_get_role_account', { p_email: target.email });
+    expect(anonymous.error).not.toBeNull();
+
+    const login = await client.auth.signInWithPassword({
+      email: actor.email,
+      password: actor.password,
+    });
+    expect(login.error, 'The temporary Sales account must sign in.').toBeNull();
+
+    const lookup = await client.rpc('crm_get_role_account', { p_email: target.email });
+    expect(lookup.error?.code).toBe('42501');
+
+    for (const operation of ['assign', 'revoke']) {
+      const result = await client.rpc('crm_change_user_role', {
+        p_email: target.email,
+        p_role_key: operation === 'assign' ? 'super_admin' : 'sales_executive',
+        p_operation: operation,
+      });
+      expect(result.error?.code).toBe('42501');
+    }
+
+    const privileged = createClient(url, process.env.SUPABASE_LOCAL_TEST_SECRET_KEY!, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const unchanged = await privileged.rpc('crm_get_role_account', { p_email: target.email });
+    expect(unchanged.error).toBeNull();
+    expect(unchanged.data.roles).toEqual(['sales_executive']);
+  } finally {
+    await client.auth.signOut({ scope: 'local' });
+  }
+});
+
+test('concurrent duplicate role requests preserve unrelated memberships', async ({ localAuth }) => {
+  const { createClient } = await import('@supabase/supabase-js');
+  const target = await localAuth.createAccount({ role: 'sales_executive' });
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_LOCAL_TEST_SECRET_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+
+  for (const operation of ['assign', 'revoke']) {
+    const results = await Promise.all(
+      [0, 1].map(() =>
+        admin.rpc('crm_change_user_role', {
+          p_email: target.email,
+          p_role_key: 'finance_officer',
+          p_operation: operation,
+        }),
+      ),
+    );
+    for (const result of results) {
+      expect(result.error).toBeNull();
+      expect(result.data.roles).toEqual(
+        operation === 'assign' ? ['finance_officer', 'sales_executive'] : ['sales_executive'],
+      );
+    }
+  }
 });

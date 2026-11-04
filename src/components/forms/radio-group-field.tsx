@@ -1,5 +1,3 @@
-'use client';
-
 import { useId } from 'react';
 import { fieldDescriptionIds } from '@/lib/forms/field-description';
 import { cn, focusRing } from '@/lib/utils';
@@ -47,6 +45,7 @@ export function RadioGroupField({
       id={groupId}
       disabled={disabled}
       aria-describedby={groupDescriptionIds}
+      aria-invalid={error ? true : undefined}
       className={cn('min-w-0 space-y-3', className)}
     >
       <legend className="text-sm font-medium text-foreground">
@@ -65,7 +64,7 @@ export function RadioGroupField({
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-3">
+       <div className="grid gap-3 sm:grid-cols-3">
         {options.map((option, index) => {
           const optionId = `${groupId}-${index}`;
           const optionLabelId = `${optionId}-label`;
@@ -85,6 +84,7 @@ export function RadioGroupField({
                 isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
               )}
             >
+
               <input
                 id={optionId}
                 type="radio"
@@ -96,7 +96,6 @@ export function RadioGroupField({
                 onChange={() => onValueChange(option.value)}
                 aria-labelledby={optionLabelId}
                 aria-describedby={describedBy || undefined}
-                aria-invalid={error ? true : undefined}
                 className={cn('mt-0.5 size-5 shrink-0 accent-primary', focusRing)}
               />
 

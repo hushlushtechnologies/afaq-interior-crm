@@ -14,12 +14,7 @@ export function Label({ className, required, children, ...props }: LabelProps) {
     >
       {children}
       {required && (
-        <>
-          <span aria-hidden="true" className="ml-1 text-destructive">
-            *
-          </span>
-          <span className="sr-only"> (required)</span>
-        </>
+        <span aria-hidden="true" className="ml-1 text-destructive after:content-['*']" />
       )}
     </label>
   );
