@@ -31,13 +31,16 @@ enabled = true
 port = 57424
 
 [storage]
-enabled = false
+enabled = true
+file_size_limit = "10MiB"
 
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
 additional_redirect_urls = [
   "http://localhost:3000/auth/callback",
+  "http://localhost:3000/auth/accept-invitation",
+  "http://127.0.0.1:3100/auth/accept-invitation",
   "http://localhost:3000/auth/confirm",
   "http://localhost:3000/auth/update-password",
   "http://127.0.0.1:3100/auth/confirm",
@@ -62,6 +65,10 @@ otp_expiry = 600
 [auth.email.template.confirmation]
 subject = "Verify your Afaq CRM email"
 content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.invite]
+subject = "Your Afaq CRM local invitation"
+content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.recovery]
 subject = "Reset your Afaq CRM password"

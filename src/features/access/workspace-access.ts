@@ -16,9 +16,18 @@ import type { WorkspaceModule, WorkspacePage } from '@/types/workspace';
 type WorkspaceRequirement = {
   permission: PermissionKey;
   scope?: AccessScope;
+  superAdminOnly?: boolean;
 };
 
 export function getWorkspaceRequirement(page: WorkspacePage): WorkspaceRequirement {
+  if (page.module.id === 'employees' && page.section.slug === 'invitations') {
+    return {
+      permission: 'access.roles.manage',
+      scope: 'company',
+      superAdminOnly: true,
+    };
+  }
+
   if (page.module.id === 'settings' && page.section.slug === 'access') {
     return {
       permission: 'access.roles.manage',
@@ -33,6 +42,8 @@ export function getWorkspaceRequirement(page: WorkspacePage): WorkspaceRequireme
 
 export function canOpenWorkspacePage(snapshot: AccessSnapshot, page: WorkspacePage): boolean {
   const requirement = getWorkspaceRequirement(page);
+
+  if (requirement.superAdminOnly && !snapshot.roles.includes('super_admin')) return false;
 
   return requirement.scope
     ? hasRequiredScope(snapshot, requirement.permission, requirement.scope)

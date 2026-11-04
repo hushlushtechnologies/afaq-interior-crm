@@ -1,7 +1,5 @@
-sql
 -- Run only through the dedicated local project's Docker database container.
 -- All changes below are rolled back. Never run against a hosted database.
-
 \set ON_ERROR_STOP on
 BEGIN;
 SET LOCAL statement_timeout = '15s';
@@ -56,4 +54,3 @@ BEGIN
 END;
 $$;
 ROLLBACK;
-```

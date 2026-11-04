@@ -62,10 +62,7 @@ export async function requestEmployeeInvitationAction(
   let result: Awaited<ReturnType<typeof requestEmployeeInvitation>>;
 
   try {
-    result = await requestEmployeeInvitation(
-      await createSupabaseMutationClient(),
-      parsed.data,
-    );
+    result = await requestEmployeeInvitation(await createSupabaseMutationClient(), parsed.data);
   } catch {
     return {
       status: 'error',

@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { SecurityAuditWorkspace } from '@/components/access/security-audit-workspace';
 import { AccessOverview } from '@/components/access/access-overview';
 import { AccessUnavailable } from '@/components/access/access-unavailable';
 import { RoleManagementWorkspace } from '@/components/access/role-management-workspace';
 import { WorkspaceAccessDenied } from '@/components/access/workspace-access-denied';
 import { DashboardPrototype } from '@/components/dashboard/dashboard-prototype';
+import { EmployeeInvitationWorkspace } from '@/components/employees/employee-invitation-workspace';
+import { EmployeeDirectoryWorkspace } from '@/components/employees/employee-directory-workspace';
+import { loadEmployeeDirectory } from '@/features/employee/directory-actions';
 import { LeadsWorkspace } from '@/components/leads/leads-workspace';
 import { WorkspacePlaceholder } from '@/components/workspace/workspace-placeholder';
 import { getMyAccessState } from '@/features/access/server';
@@ -56,7 +60,22 @@ export default async function WorkspaceRoute({ params }: WorkspaceRouteProps) {
   }
 
   if (page.module.id === 'settings' && page.section.slug === 'access') {
-    return <RoleManagementWorkspace />;
+    return (
+      <div className="space-y-6">
+        <RoleManagementWorkspace />
+        <SecurityAuditWorkspace />
+      </div>
+    );
+  }
+
+  if (page.module.id === 'employees' && page.section.slug === 'invitations') {
+    return <EmployeeInvitationWorkspace />;
+  }
+
+  if (page.module.id === 'employees' && page.section.slug === '') {
+    return (
+      <EmployeeDirectoryWorkspace initial={await loadEmployeeDirectory({ search: '', page: 0 })} />
+    );
   }
 
   const isDashboard = page.module.id === 'dashboard' && page.section.slug === '';
