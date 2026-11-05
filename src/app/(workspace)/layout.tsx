@@ -9,6 +9,7 @@ import { AuthUnavailable } from '@/components/auth/auth-unavailable';
 import { DemoCrmProvider } from '@/components/demo/demo-crm-provider';
 import { AppShell } from '@/components/shell/app-shell';
 import { Skeleton } from '@/components/ui/skeleton';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getMyAccessState } from '@/features/access/server';
 import { canUseRecordDemo } from '@/features/access/workspace-access';
 import { getAuthState } from '@/features/auth/session';
@@ -27,6 +28,26 @@ async function AuthenticatedWorkspace({ children }: { children: ReactNode }) {
   if (auth.status === 'unavailable') {
     return <AuthUnavailable />;
   }
+
+  let employmentStatus: unknown = null;
+  try {
+    const client = await createSupabaseServerClient();
+    const status = await client.rpc('crm_get_my_employee_status');
+    if (!status.error) employmentStatus = status.data;
+  } catch {
+    // Leave the status unknown and render the fail-closed state below.
+  }
+  if (employmentStatus === 'inactive' || employmentStatus === 'invited') {
+    return (
+      <AuthPanel
+        title={employmentStatus === 'inactive' ? 'Account inactive' : 'Account not active'}
+        description="Contact your administrator to review your employee account status."
+      >
+        <AccountToolbar email={auth.user.email} />
+      </AuthPanel>
+    );
+  }
+  if (employmentStatus !== 'active') return <AccessUnavailable email={auth.user.email} />;
 
   const access = await getMyAccessState();
 

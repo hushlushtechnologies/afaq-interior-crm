@@ -20,14 +20,12 @@ type WorkspaceRequirement = {
 };
 
 export function getWorkspaceRequirement(page: WorkspacePage): WorkspaceRequirement {
-  if (page.module.id === 'employees' && page.section.slug === 'invitations') {
-    return {
-      permission: 'access.roles.manage',
-      scope: 'company',
-      superAdminOnly: true,
-    };
+  if (page.module.id === 'employees' && page.section.slug === '') {
+    return { permission: 'employees.view', scope: 'company' };
   }
-
+  if (page.module.id === 'employees' && page.section.slug === 'invitations') {
+    return { permission: 'access.roles.manage', scope: 'company', superAdminOnly: true };
+  }
   if (page.module.id === 'settings' && page.section.slug === 'access') {
     return {
       permission: 'access.roles.manage',

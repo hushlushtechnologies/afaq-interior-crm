@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { createLocalAuthFixtures } from './helpers/local-auth-fixtures';
 import { chromium, expect, type FullConfig } from '@playwright/test';
 import {
   getAuthStatePath,
@@ -15,6 +16,9 @@ export default async function setup(config: FullConfig) {
   if (!baseURL) {
     throw new Error('The test baseURL is missing.');
   }
+
+  // Validate the isolated API/project before launching a browser or signing in.
+  createLocalAuthFixtures(baseURL);
 
   const statePath = getAuthStatePath(baseURL);
   const credentials = getAuthTestCredentials();
