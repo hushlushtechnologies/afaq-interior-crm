@@ -131,7 +131,7 @@ export function LeadsKanban({ leads }: { leads: readonly DemoLead[] }) {
           role="region"
           aria-label="Scrollable sales pipeline"
           tabIndex={0}
-          className={cn('min-w-0 overflow-x-auto rounded-card pb-4', focusRing)}
+          className={cn('relative min-w-0 overflow-x-auto rounded-card pb-4', focusRing)}
         >
           <div className="grid grid-flow-col auto-cols-[18rem] items-start gap-4 p-1">
             {DEMO_STAGES.map((stage) => (

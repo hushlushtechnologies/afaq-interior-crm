@@ -57,6 +57,10 @@ for (const width of [375, 600, 768, 900, 1024, 1440]) {
 
 test('desktop navigation, breadcrumbs, and sidebar controls work', async ({ page }) => {
   await page.goto('/dashboard');
+  await page.getByRole('button', { name: 'Search navigation', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Search navigation', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Search navigation', exact: true })).toHaveCount(0);
 
   const rail = page.getByRole('navigation', {
     name: 'Primary navigation',
@@ -188,6 +192,11 @@ test('tablet drawer closes when resized to desktop', async ({ page }) => {
 
 test('navigation search works with the keyboard shortcut', async ({ page }) => {
   await page.goto('/dashboard');
+  // A successful interaction establishes hydration before a window keyboard event.
+  await page.getByRole('button', { name: 'Search navigation', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Search navigation', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Search navigation', exact: true })).toHaveCount(0);
   await page.keyboard.press('Control+k');
 
   const dialog = page.getByRole('dialog', {
@@ -320,6 +329,7 @@ test('authenticated dashboard has no detected WCAG A or AA violations', async ({
 
   await expect(
     page.getByRole('heading', {
+      level: 1,
       name: 'Dashboard',
       exact: true,
     }),

@@ -1,6 +1,13 @@
 'use client';
 
-import { startTransition, useActionState, useEffect, useRef, type FormEvent } from 'react';
+import {
+  startTransition,
+  useActionState,
+  useEffect,
+  useRef,
+  useSyncExternalStore,
+  type FormEvent,
+} from 'react';
 import { Button } from '@/components/ui/button';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { confirmEmailLinkAction } from '@/features/auth/recovery-actions';
@@ -12,7 +19,14 @@ type EmailLinkInput = {
   type: string;
 };
 
+const subscribe = () => () => {};
+
 export function EmailLinkConfirmForm() {
+  const hydrated = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
   const [state, dispatch, pending] = useActionState<EmailLinkState, EmailLinkInput>(
     confirmEmailLinkAction,
     INITIAL_EMAIL_LINK_STATE,
@@ -58,7 +72,7 @@ export function EmailLinkConfirmForm() {
         Select Continue to verify the one-time link from your email.
       </p>
 
-      <Button type="submit" loading={pending} className="w-full">
+      <Button type="submit" loading={pending} disabled={!hydrated} className="w-full">
         Continue
       </Button>
     </form>

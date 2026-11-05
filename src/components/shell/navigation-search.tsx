@@ -77,13 +77,12 @@ export function NavigationSearch() {
         <Button
           type="button"
           variant="outline"
-          aria-label="Search navigation"
           aria-keyshortcuts="Control+K Meta+K"
           className="size-12 min-h-12 shrink-0 px-0 xl:w-64 xl:justify-start xl:px-3"
         >
           <Icon icon={Search} />
 
-          <span className="hidden xl:inline">Search workspace</span>
+          <span className="sr-only xl:not-sr-only">Search navigation</span>
 
           <kbd
             aria-hidden="true"

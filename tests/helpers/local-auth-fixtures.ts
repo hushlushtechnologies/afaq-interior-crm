@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -171,6 +172,7 @@ export function createLocalAuthFixtures(applicationUrl: string): LocalAuthFixtur
   }
 
   async function cleanup() {
+    const fixtureIds = [...createdUsers.keys()];
     let failed = false;
 
     for (const [id, expectedEmail] of createdUsers) {
@@ -197,6 +199,33 @@ export function createLocalAuthFixtures(applicationUrl: string): LocalAuthFixtur
 
     if (failed) {
       throw new Error('Some temporary local authentication accounts could not be cleaned up.');
+    }
+    // Owner-only cleanup of this fixture's audit evidence, after Auth cascades finish.
+    // Existing non-fixture history is retained. No audit deletion RPC is exposed.
+    if (fixtureIds.length) {
+      if (fixtureIds.some((id) => !/^[0-9a-f-]{36}$/.test(id)))
+        throw new Error('Invalid fixture UUID.');
+      const ids = fixtureIds.map((id) => `'${id}'`).join(',');
+      execFileSync(
+        'docker',
+        [
+          'exec',
+          '-i',
+          'supabase_db_afaq-interiors-crm-s09-local',
+          'psql',
+          '-U',
+          'postgres',
+          '-d',
+          'postgres',
+          '-X',
+          '-v',
+          'ON_ERROR_STOP=1',
+        ],
+        {
+          input: `DO $$ BEGIN IF to_regclass('crm_access.role_events') IS NOT NULL THEN DELETE FROM crm_access.role_events WHERE target_user_id IN (${ids}) OR actor_id IN (${ids}); END IF; END $$;`,
+          stdio: ['pipe', 'pipe', 'pipe'],
+        },
+      );
     }
   }
 

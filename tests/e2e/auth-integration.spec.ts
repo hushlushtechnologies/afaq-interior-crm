@@ -177,9 +177,9 @@ test('an unconfirmed email cannot open the workspace', async ({ localAuth, page 
     })
     .click();
 
-  await expect(page.getByRole('alert')).toContainText(
-    'Check your email, password, and email verification.',
-  );
+  await expect(
+    page.getByRole('form', { name: 'Employee sign in', exact: true }).getByRole('alert'),
+  ).toContainText('Check your email, password, and email verification.');
 
   await page.goto('/dashboard');
 
@@ -356,9 +356,11 @@ test('a recovery email changes the password and rejects the old password', async
       })
       .click();
 
-    await expect(oldPasswordPage.getByRole('alert')).toContainText(
-      'Check your email, password, and email verification.',
-    );
+    await expect(
+      oldPasswordPage
+        .getByRole('form', { name: 'Employee sign in', exact: true })
+        .getByRole('alert'),
+    ).toContainText('Check your email, password, and email verification.');
   } finally {
     await oldPasswordContext.close();
   }
@@ -427,7 +429,9 @@ test('verification link confirms the account, ignores external next URLs, and is
 
     await openEmailConfirmation(retryPage, proof);
 
-    await expect(retryPage.getByRole('alert')).toContainText('invalid, expired, or already used');
+    await expect(
+      retryPage.getByRole('form', { name: 'Confirm email link', exact: true }).getByRole('alert'),
+    ).toContainText('invalid, expired, or already used');
 
     await retryPage.goto('/dashboard');
 

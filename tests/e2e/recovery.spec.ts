@@ -43,7 +43,7 @@ test.describe('public password recovery', () => {
       })
       .click();
 
-    await expect(page.getByRole('alert')).toBeFocused();
+    await expect(page.getByRole('main').getByRole('alert')).toBeFocused();
 
     await expect(
       page.getByLabel('Employee email', {
@@ -98,7 +98,7 @@ test.describe('public password recovery', () => {
       }),
     ).toBeVisible();
 
-    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(page.getByRole('main').getByRole('alert')).toHaveCount(0);
   });
 
   test('invalid recovery token is handled without signing in', async ({ page }) => {
@@ -111,7 +111,9 @@ test.describe('public password recovery', () => {
       })
       .click();
 
-    await expect(page.getByRole('alert')).toContainText('invalid, expired, or already used');
+    await expect(page.getByRole('main').getByRole('alert')).toContainText(
+      'invalid, expired, or already used',
+    );
 
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/\/login$/);
@@ -127,7 +129,7 @@ test.describe('public password recovery', () => {
       })
       .click();
 
-    await expect(page.getByRole('alert')).toContainText('invalid or incomplete');
+    await expect(page.getByRole('main').getByRole('alert')).toContainText('invalid or incomplete');
   });
 });
 
@@ -150,6 +152,8 @@ test.describe('authenticated password validation', () => {
       })
       .click();
 
-    await expect(page.getByRole('alert')).toContainText('Passwords do not match.');
+    await expect(page.getByRole('main').getByRole('alert')).toContainText(
+      'Passwords do not match.',
+    );
   });
 });

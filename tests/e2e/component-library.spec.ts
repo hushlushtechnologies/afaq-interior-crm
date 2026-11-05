@@ -19,7 +19,9 @@ test('validation focuses the error summary and links to fields', async ({ page }
     })
     .click();
 
-  const summary = page.getByRole('alert');
+  const summary = page
+    .getByRole('form', { name: 'Sample inquiry form', exact: true })
+    .getByRole('alert');
 
   await expect(summary).toBeVisible();
   await expect(summary).toBeFocused();
@@ -58,7 +60,10 @@ test('valid submission shows a local result and editing clears it', async ({ pag
       name: 'Show a follow-up reminder',
       exact: true,
     })
-    .check();
+    .press('Space');
+  await expect(
+    page.getByRole('switch', { name: 'Show a follow-up reminder', exact: true }),
+  ).toBeChecked();
 
   await page
     .getByRole('button', {
@@ -98,9 +103,9 @@ test('invalid budget is rejected and can be corrected', async ({ page }) => {
 
   await expect(budget).toHaveAttribute('aria-invalid', 'true');
 
-  await expect(page.getByRole('alert')).toContainText(
-    'Enter an AED amount with no more than 2 decimal places.',
-  );
+  await expect(
+    page.getByRole('form', { name: 'Sample inquiry form', exact: true }).getByRole('alert'),
+  ).toContainText('Enter an AED amount with no more than 2 decimal places.');
 
   await budget.fill('1000.50');
 
@@ -174,7 +179,9 @@ test('password visibility toggles without submitting the example', async ({ page
 
   await expect(password).toHaveAttribute('type', 'password');
 
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(
+    page.getByRole('form', { name: 'Sample inquiry form', exact: true }).getByRole('alert'),
+  ).toHaveCount(0);
   await expect(page.getByRole('status')).toHaveCount(0);
 });
 
@@ -279,7 +286,9 @@ test('validation errors have no detected WCAG A or AA violations', async ({ page
     })
     .click();
 
-  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(
+    page.getByRole('form', { name: 'Sample inquiry form', exact: true }).getByRole('alert'),
+  ).toBeVisible();
 
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

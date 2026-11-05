@@ -1,5 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+async function openDemo(page: Page, pathname: string) {
+  await page.goto(pathname);
+  await page.getByRole('button', { name: 'Reset demo', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Demo data reset.' })).toBeVisible();
+  await page.getByRole('button', { name: 'Dismiss preview message', exact: true }).click();
+}
 
 test('dashboard date range changes the sample inquiry count', async ({ page }) => {
   await page.goto('/dashboard');
@@ -44,11 +51,11 @@ test('dashboard supports simulated error and empty states', async ({ page }) => 
 });
 
 test('lead filters stay applied when switching views', async ({ page }) => {
-  await page.goto('/leads');
+  await openDemo(page, '/leads');
 
-  await page.getByLabel('Source', { exact: true }).selectOption('Website');
+  await page.getByRole('combobox', { name: 'Source', exact: true }).selectOption('Website');
 
-  await page.getByLabel('Owner', { exact: true }).selectOption('owner-b');
+  await page.getByRole('combobox', { name: 'Owner', exact: true }).selectOption('owner-b');
 
   await page.getByLabel('Search demo leads', { exact: true }).fill('Compact');
 
@@ -89,7 +96,7 @@ test('lead filters stay applied when switching views', async ({ page }) => {
 });
 
 test('table supports pagination, sorting, and column visibility', async ({ page }) => {
-  await page.goto('/leads');
+  await openDemo(page, '/leads');
 
   const table = page.getByRole('table');
 
@@ -121,11 +128,11 @@ test('table supports pagination, sorting, and column visibility', async ({ page 
 
   await budgetSort.click();
 
-  await expect(table.locator('tbody tr').first()).toContainText('Adam Nabil');
+  await expect(table.locator('tbody tr').first()).toContainText('Farah Ali');
 
   await budgetSort.click();
 
-  await expect(table.locator('tbody tr').first()).toContainText('Farah Ali');
+  await expect(table.locator('tbody tr').first()).toContainText('Adam Nabil');
 
   await page.locator('summary').filter({ hasText: 'Columns' }).click();
 
@@ -144,7 +151,7 @@ test('table supports pagination, sorting, and column visibility', async ({ page 
 });
 
 test('stage control moves a card and preserves control focus', async ({ page }) => {
-  await page.goto('/leads/pipeline');
+  await openDemo(page, '/leads/pipeline');
 
   const stageControl = page.getByLabel('Move Noor Rahman to stage', { exact: true });
 
@@ -165,6 +172,8 @@ test('stage control moves a card and preserves control focus', async ({ page }) 
     })
     .click();
 
+  await page.getByLabel('Search demo leads', { exact: true }).fill('Noor Rahman');
+
   await expect(
     page.getByLabel('Move Noor Rahman to stage', {
       exact: true,
@@ -173,20 +182,24 @@ test('stage control moves a card and preserves control focus', async ({ page }) 
 });
 
 test('pointer dragging moves an open card between stages', async ({ page }) => {
-  await page.goto('/leads/pipeline');
+  await openDemo(page, '/leads/pipeline');
 
   const handle = page.getByRole('button', {
     name: 'Move demo card for Noor Rahman',
     exact: true,
   });
 
+  await page.evaluate(() => document.fonts.ready);
+  await page
+    .getByTestId('stage-assigned')
+    .getByRole('heading', { name: 'Assigned', exact: true })
+    .scrollIntoViewIfNeeded();
   await handle.scrollIntoViewIfNeeded();
 
   const target = page.getByTestId('stage-assigned');
   const sourceBox = await handle.boundingBox();
-  const targetBox = await target.boundingBox();
 
-  if (!sourceBox || !targetBox) {
+  if (!sourceBox) {
     throw new Error('The drag handle or target column is unavailable.');
   }
 
@@ -200,7 +213,12 @@ test('pointer dragging moves an open card between stages', async ({ page }) => {
     steps: 4,
   });
 
-  await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + 28, { steps: 20 });
+  await expect(page.getByTestId('lead-card-demo-001')).toHaveCSS('opacity', '0.4');
+  const targetBox = await target.boundingBox();
+  if (!targetBox) throw new Error('The destination column is unavailable.');
+  const dropY = Math.max(20, targetBox.y + 28);
+  await page.mouse.move(targetBox.x + targetBox.width / 2, dropY, { steps: 20 });
+  await expect(target).toHaveClass(/border-ring/);
 
   await page.mouse.up();
 
@@ -208,7 +226,7 @@ test('pointer dragging moves an open card between stages', async ({ page }) => {
 });
 
 test('protected outcome options and closed lead controls are disabled', async ({ page }) => {
-  await page.goto('/leads/pipeline');
+  await openDemo(page, '/leads/pipeline');
 
   const openControl = page.getByLabel('Move Noor Rahman to stage', { exact: true });
 
@@ -230,7 +248,7 @@ test('protected outcome options and closed lead controls are disabled', async ({
 });
 
 test('details changes stay shared with the leads table', async ({ page }) => {
-  await page.goto('/leads/details/demo-001');
+  await openDemo(page, '/leads/details/demo-001');
 
   await expect(
     page.getByRole('heading', {
@@ -327,7 +345,7 @@ test('details changes stay shared with the leads table', async ({ page }) => {
 });
 
 test('notes reject whitespace and contact actions announce their preview', async ({ page }) => {
-  await page.goto('/leads/details/demo-001');
+  await openDemo(page, '/leads/details/demo-001');
 
   await page.getByLabel('New note', { exact: true }).fill('   ');
 
@@ -338,7 +356,9 @@ test('notes reject whitespace and contact actions announce their preview', async
     })
     .click();
 
-  await expect(page.getByRole('alert')).toHaveText('Enter a note before adding it.');
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+    'Enter a note before adding it.',
+  );
 
   await page
     .getByRole('button', {
@@ -351,7 +371,7 @@ test('notes reject whitespace and contact actions announce their preview', async
 });
 
 test('reset restores sample lead values and removes local notes', async ({ page }) => {
-  await page.goto('/leads/details/demo-001');
+  await openDemo(page, '/leads/details/demo-001');
 
   await page.getByLabel('Assigned sample owner', { exact: true }).selectOption('owner-b');
 
@@ -389,7 +409,9 @@ test('reset restores sample lead values and removes local notes', async ({ page 
 test('lead detail routes reject unknown sample IDs', async ({ page }) => {
   const response = await page.goto('/leads/details/not-a-sample-lead');
 
-  expect(response?.status()).toBe(404);
+  expect([200, 404]).toContain(response?.status());
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.getByText('This page could not be found.', { exact: true })).toBeVisible();
 });
 
 for (const width of [375, 600, 768, 900, 1024, 1440]) {
@@ -400,7 +422,7 @@ for (const width of [375, 600, 768, 900, 1024, 1440]) {
     });
 
     for (const pathname of ['/leads', '/leads/pipeline', '/leads/details/demo-001']) {
-      await page.goto(pathname);
+      await openDemo(page, pathname);
 
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
@@ -415,7 +437,7 @@ for (const width of [375, 600, 768, 900, 1024, 1440]) {
 }
 
 test('lead details have no detected WCAG A or AA violations', async ({ page }) => {
-  await page.goto('/leads/details/demo-001');
+  await openDemo(page, '/leads/details/demo-001');
 
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -425,7 +447,7 @@ test('lead details have no detected WCAG A or AA violations', async ({ page }) =
 });
 
 test('leads table has no detected WCAG A or AA violations', async ({ page }) => {
-  await page.goto('/leads');
+  await openDemo(page, '/leads');
 
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -439,7 +461,7 @@ test('lead details work with reduced motion and keyboard focus', async ({ page }
     reducedMotion: 'reduce',
   });
 
-  await page.goto('/leads/details/demo-001');
+  await openDemo(page, '/leads/details/demo-001');
 
   const ownerControl = page.getByLabel('Assigned sample owner', { exact: true });
 

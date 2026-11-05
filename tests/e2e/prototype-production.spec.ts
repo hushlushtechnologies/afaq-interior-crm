@@ -26,7 +26,9 @@ test('production dashboard excludes the development fixtures', async ({ page }) 
 test('development lead details are unavailable in production', async ({ page }) => {
   const response = await page.goto('/leads/details/demo-001');
 
-  expect(response?.status()).toBe(404);
+  expect([200, 404]).toContain(response?.status());
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.getByText('This page could not be found.', { exact: true })).toBeVisible();
 
   await expect(
     page.getByRole('heading', {

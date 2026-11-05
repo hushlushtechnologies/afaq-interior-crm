@@ -143,7 +143,9 @@ test('invalid email-verification link is handled', async ({ page }) => {
     })
     .click();
 
-  await expect(page.getByRole('alert')).toContainText('invalid, expired, or already used');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
+    'invalid, expired, or already used',
+  );
 
   await expect(
     page.getByRole('link', {

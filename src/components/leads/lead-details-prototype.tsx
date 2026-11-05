@@ -444,7 +444,7 @@ export function LeadDetailsPrototype({ leadId }: { leadId: string }) {
                     type="button"
                     variant="outline"
                     size="sm"
-                    aria-label={`Preview attachment ${attachment.name}`}
+                    aria-label={`File information for ${attachment.name}`}
                     onClick={() =>
                       announce(
                         `${attachment.name} is sample metadata. No stored file is available to open or download.`,

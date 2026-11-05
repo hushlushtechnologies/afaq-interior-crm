@@ -57,7 +57,7 @@ test('authentication: empty login shows field errors', async ({ page }) => {
     })
     .click();
 
-  const summary = page.getByRole('alert');
+  const summary = page.getByRole('main').getByRole('alert');
 
   await expect(summary).toBeFocused();
 
@@ -90,7 +90,7 @@ test('authentication: incorrect credentials show a generic error', async ({ page
     })
     .click();
 
-  await expect(page.getByRole('alert')).toContainText(
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
     'Check your email, password, and email verification.',
   );
 

@@ -51,6 +51,7 @@ export async function signInLocalAccount(
 
 export async function openEmailConfirmation(page: Page, proof: EmailLinkProof, query = '') {
   await page.goto(`/auth/confirm${query}`);
+  await expect(page.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled();
 
   await page.evaluate((input) => {
     const fragment = new URLSearchParams({

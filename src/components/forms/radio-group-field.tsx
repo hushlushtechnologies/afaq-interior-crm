@@ -1,3 +1,5 @@
+'use client';
+
 import { useId } from 'react';
 import { fieldDescriptionIds } from '@/lib/forms/field-description';
 import { cn, focusRing } from '@/lib/utils';
@@ -64,7 +66,7 @@ export function RadioGroupField({
         </p>
       ) : null}
 
-       <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {options.map((option, index) => {
           const optionId = `${groupId}-${index}`;
           const optionLabelId = `${optionId}-label`;
@@ -84,7 +86,6 @@ export function RadioGroupField({
                 isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
               )}
             >
-
               <input
                 id={optionId}
                 type="radio"

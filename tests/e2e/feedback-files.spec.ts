@@ -101,9 +101,7 @@ test('notification stack is limited to three and can be cleared', async ({ page 
 test('native file input supports keyboard selection', async ({ page }) => {
   await page.goto('/dev/component-library');
 
-  const input = page.getByLabel('Reference files', {
-    exact: true,
-  });
+  const input = page.getByRole('button', { name: 'Reference files', exact: true });
 
   await input.focus();
   await expect(input).toBeFocused();
@@ -164,9 +162,7 @@ test('files can be added by drag and drop', async ({ page }) => {
 test('duplicate selections are rejected without removing the original', async ({ page }) => {
   await page.goto('/dev/component-library');
 
-  const input = page.getByLabel('Reference files', {
-    exact: true,
-  });
+  const input = page.getByRole('button', { name: 'Reference files', exact: true });
 
   const transfer = await page.evaluateHandle(() => {
     const data = new DataTransfer();
@@ -193,7 +189,9 @@ test('duplicate selections are rejected without removing the original', async ({
 
   await transfer.dispose();
 
-  await expect(page.getByRole('alert')).toContainText('same.pdf is already selected.');
+  await expect(
+    page.getByRole('group', { name: 'Reference files', exact: true }).getByRole('alert'),
+  ).toContainText('same.pdf is already selected.');
 
   await expect(
     page
@@ -210,13 +208,15 @@ test('duplicate selections are rejected without removing the original', async ({
 test('unsupported file types are rejected', async ({ page }) => {
   await page.goto('/dev/component-library');
 
-  await page.getByLabel('Reference files', { exact: true }).setInputFiles({
+  await page.getByRole('button', { name: 'Reference files', exact: true }).setInputFiles({
     name: 'unsupported.svg',
     mimeType: 'image/svg+xml',
     buffer: Buffer.from('<svg></svg>'),
   });
 
-  await expect(page.getByRole('alert')).toContainText('not accepted');
+  await expect(
+    page.getByRole('group', { name: 'Reference files', exact: true }).getByRole('alert'),
+  ).toContainText('not accepted');
 
   await expect(
     page.getByRole('list', {
@@ -236,13 +236,15 @@ test('unsupported file types are rejected', async ({ page }) => {
 test('oversized files are rejected', async ({ page }) => {
   await page.goto('/dev/component-library');
 
-  await page.getByLabel('Reference files', { exact: true }).setInputFiles({
+  await page.getByRole('button', { name: 'Reference files', exact: true }).setInputFiles({
     name: 'oversized.pdf',
     mimeType: 'application/pdf',
     buffer: Buffer.alloc(2 * 1024 * 1024 + 1, 1),
   });
 
-  await expect(page.getByRole('alert')).toContainText('exceeds the 2 MiB limit');
+  await expect(
+    page.getByRole('group', { name: 'Reference files', exact: true }).getByRole('alert'),
+  ).toContainText('exceeds the 2 MiB limit');
 
   await expect(page.getByTestId('selected-file-count')).toHaveText('0 of 3 files selected');
 });
@@ -251,7 +253,7 @@ test('file-count limit keeps valid files and reports overflow', async ({ page })
   await page.goto('/dev/component-library');
 
   await page
-    .getByLabel('Reference files', { exact: true })
+    .getByRole('button', { name: 'Reference files', exact: true })
     .setInputFiles([
       samplePdf('one.pdf'),
       samplePdf('two.pdf'),
@@ -268,13 +270,17 @@ test('file-count limit keeps valid files and reports overflow', async ({ page })
       .getByRole('listitem'),
   ).toHaveCount(3);
 
-  await expect(page.getByRole('alert')).toContainText('Only 3 files can be selected.');
+  await expect(
+    page.getByRole('group', { name: 'Reference files', exact: true }).getByRole('alert'),
+  ).toContainText('Only 3 files can be selected.');
 });
 
 test('document preview shows metadata and restores focus', async ({ page }) => {
   await page.goto('/dev/component-library');
 
-  await page.getByLabel('Reference files', { exact: true }).setInputFiles(samplePdf());
+  await page
+    .getByRole('button', { name: 'Reference files', exact: true })
+    .setInputFiles(samplePdf());
 
   const trigger = page.getByRole('button', {
     name: 'Preview brief.pdf',
@@ -313,9 +319,7 @@ test('image preview loads and its object URL is released after removal', async (
 
   await page.goto('/dev/component-library');
 
-  const input = page.getByLabel('Reference files', {
-    exact: true,
-  });
+  const input = page.getByRole('button', { name: 'Reference files', exact: true });
 
   await input.setInputFiles(await samplePng(page));
 
@@ -377,9 +381,7 @@ test('image preview loads and its object URL is released after removal', async (
 test('clearing selection restores the empty state', async ({ page }) => {
   await page.goto('/dev/component-library');
 
-  const input = page.getByLabel('Reference files', {
-    exact: true,
-  });
+  const input = page.getByRole('button', { name: 'Reference files', exact: true });
 
   await input.setInputFiles([samplePdf('one.pdf'), samplePdf('two.pdf')]);
 
@@ -410,7 +412,9 @@ test('clearing selection restores the empty state', async ({ page }) => {
 test('selected files can produce an accurate notification', async ({ page }) => {
   await page.goto('/dev/component-library');
 
-  await page.getByLabel('Reference files', { exact: true }).setInputFiles(samplePdf());
+  await page
+    .getByRole('button', { name: 'Reference files', exact: true })
+    .setInputFiles(samplePdf());
 
   await page
     .getByRole('button', {
@@ -439,7 +443,7 @@ for (const width of [375, 768, 1440]) {
     await page.goto('/dev/component-library');
 
     await page
-      .getByLabel('Reference files', { exact: true })
+      .getByRole('button', { name: 'Reference files', exact: true })
       .setInputFiles(samplePdf(`${'long-filename-'.repeat(8)}.pdf`));
 
     const dimensions = await page.evaluate(() => ({
@@ -456,7 +460,9 @@ test('selected files and notifications have no detected WCAG A or AA violations'
 }) => {
   await page.goto('/dev/component-library');
 
-  await page.getByLabel('Reference files', { exact: true }).setInputFiles(samplePdf());
+  await page
+    .getByRole('button', { name: 'Reference files', exact: true })
+    .setInputFiles(samplePdf());
 
   await page
     .getByRole('button', {

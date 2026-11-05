@@ -21,11 +21,11 @@ type ShellDialogProps = {
 };
 
 const positions = {
-  left: 'inset-y-2 left-2 w-[min(22rem,calc(100vw-1rem))] data-[state=open]:animate-shell-left-in data-[state=closed]:animate-shell-left-out',
+  left: 'inset-y-2 left-2 w-[min(22rem,calc(100vw-1rem))] motion-safe:data-[state=open]:animate-shell-left-in motion-safe:data-[state=closed]:animate-shell-left-out',
   right:
-    'inset-y-2 right-2 w-[min(24rem,calc(100vw-1rem))] data-[state=open]:animate-shell-right-in data-[state=closed]:animate-shell-right-out',
+    'inset-y-2 right-2 w-[min(24rem,calc(100vw-1rem))] motion-safe:data-[state=open]:animate-shell-right-in motion-safe:data-[state=closed]:animate-shell-right-out',
   center:
-    'top-1/2 left-1/2 max-h-[calc(100svh-2rem)] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 data-[state=open]:animate-shell-fade-in data-[state=closed]:animate-shell-fade-out',
+    'top-1/2 left-1/2 max-h-[calc(100svh-2rem)] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 motion-safe:data-[state=open]:animate-shell-fade-in motion-safe:data-[state=closed]:animate-shell-fade-out',
 };
 
 export function ShellDialog({
@@ -45,7 +45,7 @@ export function ShellDialog({
       <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay data-[state=open]:animate-shell-fade-in data-[state=closed]:animate-shell-fade-out motion-reduce:animate-none" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay motion-safe:data-[state=open]:animate-shell-fade-in motion-safe:data-[state=closed]:animate-shell-fade-out motion-reduce:animate-none" />
 
         <Dialog.Content
           onOpenAutoFocus={(event) => {

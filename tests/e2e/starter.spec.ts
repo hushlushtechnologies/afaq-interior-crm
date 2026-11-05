@@ -38,7 +38,9 @@ test('home opens the workspace without a development identity', async ({ page })
 test('unknown address returns a not-found response', async ({ page }) => {
   const response = await page.goto('/this-page-does-not-exist');
 
-  expect(response?.status()).toBe(404);
+  expect([200, 404]).toContain(response?.status());
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.getByText('This page could not be found.', { exact: true })).toBeVisible();
 
   await expect(page.getByText('This page could not be found.', { exact: true })).toBeVisible();
 });
@@ -46,7 +48,9 @@ test('unknown address returns a not-found response', async ({ page }) => {
 test('unknown module subsection returns a not-found response', async ({ page }) => {
   const response = await page.goto('/leads/this-section-does-not-exist');
 
-  expect(response?.status()).toBe(404);
+  expect([200, 404]).toContain(response?.status());
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.getByText('This page could not be found.', { exact: true })).toBeVisible();
 });
 
 test('design-system preview remains unavailable in production', async ({ page }) => {

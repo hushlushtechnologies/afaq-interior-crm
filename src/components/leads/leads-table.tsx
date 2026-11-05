@@ -66,8 +66,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
           >
             {row.original.clientName}
           </Link>
-
-              ),
+        ),
       },
       {
         accessorKey: 'title',
@@ -120,7 +119,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
         ),
       },
 
-       {
+      {
         accessorKey: 'source',
         header: 'Source',
       },
@@ -174,7 +173,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
               View
             </Link>
 
-             <IconButton
+            <IconButton
               label={'Preview follow-up for ' + row.original.clientName}
               icon={CalendarDays}
               variant="ghost"
@@ -193,7 +192,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
     [data.owners, data.asOfDate, announce],
   );
 
-   // TanStack Table uses mutable getters; this component explicitly opts out of memoization.
+  // TanStack Table uses mutable getters; this component explicitly opts out of memoization.
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: leads,
@@ -216,7 +215,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
     },
   });
 
-   const { pageIndex, pageSize } = table.getState().pagination;
+  const { pageIndex, pageSize } = table.getState().pagination;
   const firstRow = leads.length === 0 ? 0 : pageIndex * pageSize + 1;
   const lastRow = Math.min((pageIndex + 1) * pageSize, leads.length);
 
@@ -242,7 +241,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
             Columns
           </summary>
 
-           <fieldset className="space-y-2 border-t border-border p-4">
+          <fieldset className="space-y-2 border-t border-border p-4">
             <legend className="sr-only">Visible table columns</legend>
 
             {table
@@ -270,7 +269,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
         </details>
       </div>
 
-       <div
+      <div
         role="region"
         aria-label="Scrollable demo leads table"
         tabIndex={0}
@@ -289,7 +288,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   const sorted = header.column.getIsSorted();
-                   return (
+                  return (
                     <th
                       key={header.id}
                       scope="col"
@@ -316,7 +315,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
                             focusRing,
                           )}
                         >
-                           {flexRender(header.column.columnDef.header, header.getContext())}
+                          {flexRender(header.column.columnDef.header, header.getContext())}
                           <Icon icon={ArrowUpDown} size="sm" />
                         </button>
                       ) : (
@@ -344,7 +343,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
                   ))}
                 </tr>
               ))
-               ) : (
+            ) : (
               <tr>
                 <td
                   colSpan={table.getVisibleLeafColumns().length}
@@ -391,7 +390,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
             Page {pageIndex + 1} of {Math.max(1, table.getPageCount())}
           </span>
 
-           <IconButton
+          <IconButton
             label="Next page"
             icon={ChevronRight}
             variant="outline"

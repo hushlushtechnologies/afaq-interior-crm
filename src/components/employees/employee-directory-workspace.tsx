@@ -8,10 +8,7 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ROLE_LABELS } from '@/features/access/catalog';
-import {
-  changeEmployeeStatus,
-  loadEmployeeDirectory,
-} from '@/features/employee/directory-actions';
+import { changeEmployeeStatus, loadEmployeeDirectory } from '@/features/employee/directory-actions';
 import type { DirectoryResult, StatusChange } from '@/features/employee/directory-schemas';
 
 export function EmployeeDirectoryWorkspace({ initial }: { initial: DirectoryResult }) {

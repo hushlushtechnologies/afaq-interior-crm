@@ -20,7 +20,6 @@ const test = base.extend<{
   },
 });
 
-
 test.use({
   storageState: {
     cookies: [],
@@ -149,7 +148,7 @@ test('Sales navigation excludes Finance and role administration', async ({ page,
       exact: true,
     });
 
-     await expect(
+    await expect(
       modules.getByRole('link', {
         name: 'Leads',
         exact: true,
@@ -177,7 +176,7 @@ test('Sales navigation excludes Finance and role administration', async ({ page,
       }),
     ).toBeVisible();
 
-     await expect(
+    await expect(
       rail.getByRole('link', {
         name: 'Finance',
         exact: true,
@@ -206,7 +205,7 @@ test('Sales navigation excludes Finance and role administration', async ({ page,
     }),
   ).toHaveCount(0);
 
-   await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
 
   await page.goto('/settings/access');
 
@@ -224,7 +223,6 @@ test('Sales navigation excludes Finance and role administration', async ({ page,
     }),
   ).toHaveCount(0);
 });
-
 
 test('direct role RPCs reject anonymous callers and Sales privilege escalation', async ({
   localAuth,
