@@ -1,23 +1,25 @@
 'use client';
 
 import type { Ref } from 'react';
+import Link from 'next/link';
 
-import { useDemoCrm } from '@/components/demo/demo-crm-provider';
+import { useLeadView, type LeadListItem } from '@/components/leads/lead-view-context';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
 import { DEMO_STAGES, isProtectedDemoStage } from '@/lib/demo/stages';
-import type { DemoLead, DemoStage } from '@/types/demo-crm';
+import type { DemoStage } from '@/types/demo-crm';
+import { buttonClassName } from '@/components/ui/button';
 
 export function LeadStageSelect({
   lead,
   id,
   controlRef,
 }: {
-  lead: DemoLead;
+  lead: LeadListItem;
   id?: string;
   controlRef?: Ref<HTMLSelectElement>;
 }) {
-  const { moveLead } = useDemoCrm();
+  const { moveLead, readOnly, pipeline, serverTable } = useLeadView();
   const controlId = id ?? 'lead-stage-' + lead.id;
   const helpId = controlId + '-help';
   const protectedOutcome = isProtectedDemoStage(lead.stage);
@@ -32,9 +34,13 @@ export function LeadStageSelect({
         ref={controlRef}
         id={controlId}
         value={lead.stage}
-        disabled={protectedOutcome}
+        disabled={protectedOutcome || (pipeline ? !pipeline.canMove(lead.id) : readOnly)}
         aria-describedby={helpId}
         onChange={(event) => {
+          if (pipeline) {
+            pipeline.requestMove(lead.id, event.target.value as DemoStage);
+            return;
+          }
           const restoreFocus = document.activeElement === event.currentTarget;
 
           const moved = moveLead(lead.id, event.target.value as DemoStage);
@@ -51,16 +57,42 @@ export function LeadStageSelect({
         }}
       >
         {DEMO_STAGES.map((stage) => (
-          <option key={stage.id} value={stage.id} disabled={stage.protected}>
+          <option
+            key={stage.id}
+            value={stage.id}
+            disabled={
+              pipeline
+                ? !['new', 'assigned', 'contacted', 'requirements', 'site-visit'].includes(stage.id)
+                : stage.protected
+            }
+          >
             {stage.label}
           </option>
         ))}
       </NativeSelect>
 
       <p id={helpId} className="sr-only">
-        Changes affect local demo state only. Won and Lost transitions and reopening are
-        unavailable.
+        {pipeline
+          ? 'Select a working stage to review and confirm the database change. Lost and reopening are in Lead information.'
+          : readOnly
+            ? 'Stage transitions are currently unavailable.'
+            : 'Changes affect local demo state only. Won and Lost transitions and reopening are unavailable.'}
       </p>
+      {pipeline && (
+        <Link
+          href={`/leads/details/${lead.id}`}
+          prefetch={false}
+          aria-label={`Full details for ${lead.clientName}`}
+          aria-disabled={serverTable?.disabled}
+          tabIndex={serverTable?.disabled ? -1 : undefined}
+          onClick={(event) => {
+            if (serverTable?.disabled) event.preventDefault();
+          }}
+          className={buttonClassName({ variant: 'ghost', size: 'sm', className: 'mt-1' })}
+        >
+          Full details
+        </Link>
+      )}
     </div>
   );
 }

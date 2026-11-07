@@ -1,118 +1,74 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { z } from 'zod';
 import { AccessUnavailable } from '@/components/access/access-unavailable';
 import { WorkspaceAccessDenied } from '@/components/access/workspace-access-denied';
 import { PageHeader } from '@/components/layout/page-header';
 import { LeadDetailsPrototype } from '@/components/leads/lead-details-prototype';
+import { LeadDetailsWorkspace } from '@/components/leads/lead-details-workspace';
 import { buttonClassName } from '@/components/ui/button';
-import { InlineNotice } from '@/components/ui/inline-notice';
 import { hasCapability } from '@/features/access/permissions';
 import { getMyAccessState } from '@/features/access/server';
 import { canUseRecordDemo } from '@/features/access/workspace-access';
+import { loadLeadDetails } from '@/features/lead-details/actions';
+import { loadLeads } from '@/features/leads/actions';
 import { getDemoDataset } from '@/lib/demo/crm-fixtures';
 
 export const instant = false;
-
-type LeadDetailsRouteProps = {
-  params: Promise<{
-    leadId: string;
-  }>;
-};
-
+type Props = { params: Promise<{ leadId: string }> };
 export function generateStaticParams() {
   const dataset = getDemoDataset();
-
   return dataset
-    ? dataset.leads.map((lead) => ({
-        leadId: lead.id,
-      }))
+    ? dataset.leads.map((lead) => ({ leadId: lead.id }))
     : [{ leadId: 'preview-unavailable' }];
 }
+export const metadata: Metadata = { title: 'Lead details | Afaq Al Manzel' };
 
-async function requireDemoLead(params: LeadDetailsRouteProps['params']) {
-  const dataset = getDemoDataset();
-
-  if (!dataset) {
-    notFound();
-  }
-
-  const { leadId } = await params;
-
-  const lead = dataset.leads.find((item) => item.id === leadId);
-
-  if (!lead) {
-    notFound();
-  }
-
-  return lead;
-}
-
-export async function generateMetadata({ params }: LeadDetailsRouteProps): Promise<Metadata> {
-  if (process.env.NODE_ENV !== 'development') {
-    notFound();
-  }
-
+export default async function LeadDetailsRoute({ params }: Props) {
   const access = await getMyAccessState();
-
-  if (
-    access.status === 'unavailable' ||
-    !hasCapability(access.snapshot, 'leads.view') ||
-    !canUseRecordDemo(access.snapshot)
-  ) {
-    return {
-      title: 'Lead details | Afaq Al Manzel',
-    };
-  }
-
-  const lead = await requireDemoLead(params);
-
-  return {
-    title: `${lead.clientName} | Afaq Al Manzel`,
-    description: 'Development-only lead details.',
-  };
-}
-
-export default async function LeadDetailsRoute({ params }: LeadDetailsRouteProps) {
-  if (process.env.NODE_ENV !== 'development') {
-    notFound();
-  }
-
-  const access = await getMyAccessState();
-
-  if (access.status === 'unavailable') {
-    return <AccessUnavailable />;
-  }
-
-  if (!hasCapability(access.snapshot, 'leads.view')) {
+  if (access.status === 'unavailable') return <AccessUnavailable />;
+  if (!hasCapability(access.snapshot, 'leads.view'))
     return <WorkspaceAccessDenied snapshot={access.snapshot} workspaceTitle="Lead details" />;
+  const { leadId } = await params;
+  if (!z.uuid().safeParse(leadId).success) {
+    if (
+      process.env.NODE_ENV === 'development' &&
+      canUseRecordDemo(access.snapshot) &&
+      getDemoDataset()?.leads.some((lead) => lead.id === leadId)
+    )
+      return <LeadDetailsPrototype leadId={leadId} />;
+    notFound();
   }
-
-  if (!canUseRecordDemo(access.snapshot)) {
+  const result = await loadLeads({ id: leadId, page: 0, archived: false });
+  if (result.status === 'error')
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         <PageHeader
-          title="Lead details"
-          description="This sample is not available in your current workspace view."
+          title="Lead details unavailable"
+          description="Your record access could not be confirmed."
         />
-
-        <InlineNotice title="Use your permitted lead list" tone="info">
-          <p>Open a record from the lead list available to your account.</p>
-        </InlineNotice>
-
-        <Link
-          href="/leads"
-          className={buttonClassName({
-            variant: 'outline',
-          })}
-        >
+        <p role="alert">{result.message}</p>
+        <a href={`/leads/details/${leadId}`} className={buttonClassName({ variant: 'outline' })}>
+          Retry loading lead
+        </a>
+        <Link href="/leads" className={buttonClassName({ variant: 'outline' })}>
           All leads
         </Link>
       </div>
     );
-  }
-
-  const lead = await requireDemoLead(params);
-
-  return <LeadDetailsPrototype leadId={lead.id} />;
+  const lead = result.data.rows[0];
+  if (!lead) notFound();
+  const [requirements, room, note] = await Promise.all([
+    loadLeadDetails({ leadId, kind: 'requirements', page: 0 }),
+    loadLeadDetails({ leadId, kind: 'room', page: 0 }),
+    loadLeadDetails({ leadId, kind: 'note', page: 0 }),
+  ]);
+  return (
+    <LeadDetailsWorkspace
+      key={`${lead.id}:${lead.version}`}
+      lead={lead}
+      initial={{ requirements, room, note }}
+    />
+  );
 }

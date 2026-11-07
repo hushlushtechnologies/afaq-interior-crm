@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useDraggable } from '@dnd-kit/core';
 import { CalendarDays, GripVertical } from 'lucide-react';
 
-import { useDemoCrm } from '@/components/demo/demo-crm-provider';
+import { useLeadView, type LeadListItem } from '@/components/leads/lead-view-context';
 import { LeadPriorityBadge } from '@/components/leads/lead-badges';
 import { LeadStageSelect } from '@/components/leads/lead-stage-select';
 import { Avatar } from '@/components/ui/avatar';
@@ -17,20 +17,18 @@ import { formatDemoDate, formatDemoMoney } from '@/lib/demo/format';
 import { leadDetailsHref } from '@/lib/demo/lead-views';
 import { isProtectedDemoStage } from '@/lib/demo/stages';
 import { cn, focusRing } from '@/lib/utils';
-import type { DemoLead } from '@/types/demo-crm';
 
-export function DraggableLeadCard({ lead }: { lead: DemoLead }) {
-  const { data } = useDemoCrm();
+export function DraggableLeadCard({ lead }: { lead: LeadListItem }) {
+  const { data, readOnly, onOpen, pipeline } = useLeadView();
   const stageRef = useRef<HTMLSelectElement>(null);
   const protectedOutcome = isProtectedDemoStage(lead.stage);
 
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
     id: lead.id,
-    disabled: protectedOutcome,
+    disabled: protectedOutcome || (pipeline ? !pipeline.canMove(lead.id) : readOnly),
   });
 
   const owner = data.owners.find((candidate) => candidate.id === lead.ownerId);
-
   const overdue = lead.nextFollowUpOn !== null && lead.nextFollowUpOn < data.asOfDate;
 
   return (
@@ -46,9 +44,19 @@ export function DraggableLeadCard({ lead }: { lead: DemoLead }) {
               <LeadPriorityBadge priority={lead.priority} />
 
               <h4 className="text-sm leading-snug font-semibold">
-                <Link href={leadDetailsHref(lead.id)} className={cn('rounded', focusRing)}>
-                  {lead.clientName}
-                </Link>
+                {onOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpen(lead.id)}
+                    className={cn('rounded text-left', focusRing)}
+                  >
+                    {lead.clientName}
+                  </button>
+                ) : (
+                  <Link href={leadDetailsHref(lead.id)} className={cn('rounded', focusRing)}>
+                    {lead.clientName}
+                  </Link>
+                )}
               </h4>
             </div>
 
@@ -56,10 +64,16 @@ export function DraggableLeadCard({ lead }: { lead: DemoLead }) {
               {...attributes}
               {...listeners}
               ref={setActivatorNodeRef}
-              label={'Move demo card for ' + lead.clientName}
+              label={
+                (pipeline
+                  ? 'Move lead card for '
+                  : readOnly
+                    ? 'Stage changes unavailable for '
+                    : 'Move demo card for ') + lead.clientName
+              }
               icon={GripVertical}
               variant="ghost"
-              disabled={protectedOutcome}
+              disabled={protectedOutcome || (pipeline ? !pipeline.canMove(lead.id) : readOnly)}
               onClick={() => stageRef.current?.focus()}
               className="-mt-1 -mr-1 shrink-0 touch-none cursor-grab active:cursor-grabbing"
             />
@@ -82,7 +96,7 @@ export function DraggableLeadCard({ lead }: { lead: DemoLead }) {
             <span aria-hidden="true">
               <Avatar name={owner?.name ?? 'Sample owner'} size="sm" />
             </span>
-            <p className="text-xs text-muted-foreground">{owner?.name ?? 'Unassigned sample'}</p>
+            <p className="text-xs text-muted-foreground">{owner?.name ?? 'Unassigned'}</p>
           </div>
 
           <div className="flex items-center gap-2 text-xs">
@@ -91,7 +105,7 @@ export function DraggableLeadCard({ lead }: { lead: DemoLead }) {
             <span className={overdue ? 'text-warning' : 'text-muted-foreground'}>
               {lead.nextFollowUpOn
                 ? 'Follow-up ' + formatDemoDate(lead.nextFollowUpOn, false)
-                : 'No open follow-up'}
+                : 'No follow-up date'}
             </span>
           </div>
 
@@ -102,7 +116,7 @@ export function DraggableLeadCard({ lead }: { lead: DemoLead }) {
   );
 }
 
-export function LeadDragPreview({ lead }: { lead: DemoLead }) {
+export function LeadDragPreview({ lead }: { lead: LeadListItem }) {
   return (
     <div aria-hidden="true" className="w-72">
       <Card className="border-ring shadow-float">

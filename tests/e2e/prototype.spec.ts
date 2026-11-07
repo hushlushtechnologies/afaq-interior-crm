@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
 async function openDemo(page: Page, pathname: string) {
-  await page.goto(pathname);
+  await page.goto(pathname.startsWith('/leads') ? `${pathname}?preview=1` : pathname);
   await page.getByRole('button', { name: 'Reset demo', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Demo data reset.' })).toBeVisible();
   await page.getByRole('button', { name: 'Dismiss preview message', exact: true }).click();
@@ -190,10 +190,12 @@ test('pointer dragging moves an open card between stages', async ({ page }) => {
   });
 
   await page.evaluate(() => document.fonts.ready);
+
   await page
     .getByTestId('stage-assigned')
     .getByRole('heading', { name: 'Assigned', exact: true })
     .scrollIntoViewIfNeeded();
+
   await handle.scrollIntoViewIfNeeded();
 
   const target = page.getByTestId('stage-assigned');
@@ -214,8 +216,10 @@ test('pointer dragging moves an open card between stages', async ({ page }) => {
   });
 
   await expect(page.getByTestId('lead-card-demo-001')).toHaveCSS('opacity', '0.4');
+
   const targetBox = await target.boundingBox();
   if (!targetBox) throw new Error('The destination column is unavailable.');
+
   const dropY = Math.max(20, targetBox.y + 28);
   await page.mouse.move(targetBox.x + targetBox.width / 2, dropY, { steps: 20 });
   await expect(target).toHaveClass(/border-ring/);

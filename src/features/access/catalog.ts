@@ -35,6 +35,7 @@ export const PERMISSION_LABELS = {
   'leads.create': 'Create leads',
   'leads.update': 'Update leads',
   'leads.assign': 'Assign leads',
+  'leads.archive': 'Archive leads',
   'leads.mark_won': 'Mark eligible opportunities Won',
   'leads.mark_lost': 'Mark opportunities Lost',
 

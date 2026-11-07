@@ -17,6 +17,12 @@ const requiredTests = [
   'employee-invitation-ui.spec.ts',
   'employee-invitation-delivery.spec.ts',
   'employee-directory.spec.ts',
+  'leads-crud.spec.ts',
+  'lead-pipeline.spec.ts',
+  'lead-table.spec.ts',
+  'lead-details.spec.ts',
+  'lead-detail-archive.spec.ts',
+  'site-visits.spec.ts',
 ];
 
 for (const file of requiredTests) {

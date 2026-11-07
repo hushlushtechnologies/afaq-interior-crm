@@ -10,6 +10,9 @@ import { EmployeeInvitationWorkspace } from '@/components/employees/employee-inv
 import { EmployeeDirectoryWorkspace } from '@/components/employees/employee-directory-workspace';
 import { loadEmployeeDirectory } from '@/features/employee/directory-actions';
 import { LeadsWorkspace } from '@/components/leads/leads-workspace';
+import { LeadRecordWorkspace } from '@/components/leads/lead-record-workspace';
+import { queryLeads } from '@/features/leads/query-actions';
+import { loadLeadOptions } from '@/features/leads/actions';
 import { WorkspacePlaceholder } from '@/components/workspace/workspace-placeholder';
 import { getMyAccessState } from '@/features/access/server';
 import { canOpenWorkspacePage, canUseRecordDemo } from '@/features/access/workspace-access';
@@ -18,6 +21,7 @@ import { getWorkspacePage, getWorkspaceStaticParams } from '@/lib/workspace/navi
 export const instant = false;
 
 type WorkspaceRouteProps = {
+  searchParams: Promise<{ preview?: string }>;
   params: Promise<{
     segments: string[];
   }>;
@@ -41,7 +45,7 @@ export async function generateMetadata({ params }: WorkspaceRouteProps): Promise
   };
 }
 
-export default async function WorkspaceRoute({ params }: WorkspaceRouteProps) {
+export default async function WorkspaceRoute({ params, searchParams }: WorkspaceRouteProps) {
   const { segments } = await params;
   const page = getWorkspacePage(segments);
 
@@ -94,11 +98,24 @@ export default async function WorkspaceRoute({ params }: WorkspaceRouteProps) {
     );
   }
 
-  if (isLeadList && recordDemoAllowed) {
+  if (isLeadList && recordDemoAllowed && (await searchParams).preview === '1') {
     return (
       <LeadsWorkspace
         key={page.href}
         title={page.title}
+        initialView={page.section.slug === 'pipeline' ? 'kanban' : 'table'}
+      />
+    );
+  }
+
+  if (isLeadList) {
+    const [initial, initialOptions] = await Promise.all([queryLeads({}), loadLeadOptions()]);
+
+    return (
+      <LeadRecordWorkspace
+        key={page.href}
+        initial={initial}
+        initialOptions={initialOptions}
         initialView={page.section.slug === 'pipeline' ? 'kanban' : 'table'}
       />
     );

@@ -217,3 +217,7 @@ export function useDemoCrm(): DemoCrmContextValue {
 
   return context;
 }
+
+export function useOptionalDemoCrm() {
+  return useContext(DemoCrmContext);
+}

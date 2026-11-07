@@ -14,7 +14,7 @@ import {
 } from '@tanstack/react-table';
 import { ArrowUpDown, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { useDemoCrm } from '@/components/demo/demo-crm-provider';
+import { useLeadView, type LeadListItem } from '@/components/leads/lead-view-context';
 import { LeadPriorityBadge } from '@/components/leads/lead-badges';
 import { LeadStageSelect } from '@/components/leads/lead-stage-select';
 import { Avatar } from '@/components/ui/avatar';
@@ -27,7 +27,16 @@ import { formatDemoDate, formatDemoMoney } from '@/lib/demo/format';
 import { leadDetailsHref } from '@/lib/demo/lead-views';
 import { DEMO_STAGES } from '@/lib/demo/stages';
 import { cn, focusRing } from '@/lib/utils';
-import type { DemoLead } from '@/types/demo-crm';
+
+const serverSortColumns: Record<string, string> = {
+  clientName: 'customer_name',
+  stage: 'stage',
+  owner: 'owner',
+  budget: 'budget',
+  source: 'source_code',
+  priority: 'priority',
+  followUp: 'follow_up_on',
+};
 
 const columnLabels: Record<string, string> = {
   clientName: 'Client',
@@ -41,36 +50,76 @@ const columnLabels: Record<string, string> = {
   actions: 'Actions',
 };
 
-export function LeadsTable({ leads }: { leads: DemoLead[] }) {
+export function LeadsTable({ leads }: { leads: LeadListItem[] }) {
   'use no memo';
 
-  const { data, announce } = useDemoCrm();
-
+  const { data, announce, readOnly, onOpen, serverTable, selection } = useLeadView();
   const [sorting, setSorting] = useState<SortingState>([{ id: 'clientName', desc: false }]);
-
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
-  const columns = useMemo<ColumnDef<DemoLead>[]>(
+  const columns = useMemo<ColumnDef<LeadListItem>[]>(
     () => [
+      ...(selection
+        ? [
+            {
+              id: 'selection',
+              enableSorting: false,
+              enableHiding: false,
+              header: () => (
+                <input
+                  type="checkbox"
+                  aria-label="Select all eligible leads on this page"
+                  disabled={selection.disabled || !selection.eligibleIds.length}
+                  checked={
+                    selection.eligibleIds.length > 0 &&
+                    selection.eligibleIds.every((id) => selection.ids.includes(id))
+                  }
+                  onChange={selection.togglePage}
+                />
+              ),
+              cell: ({ row }: { row: { original: LeadListItem } }) => (
+                <input
+                  type="checkbox"
+                  aria-label={`Select ${row.original.clientName}`}
+                  disabled={selection.disabled || !selection.eligibleIds.includes(row.original.id)}
+                  checked={selection.ids.includes(row.original.id)}
+                  onChange={() => selection.toggle(row.original.id)}
+                />
+              ),
+            },
+          ]
+        : []),
       {
         accessorKey: 'clientName',
         header: 'Client',
         enableHiding: false,
-        cell: ({ row }) => (
-          <Link
-            href={leadDetailsHref(row.original.id)}
-            className={cn(
-              'inline-flex min-h-11 items-center rounded-control font-semibold',
-              focusRing,
-            )}
-          >
-            {row.original.clientName}
-          </Link>
-        ),
+        cell: ({ row }) =>
+          onOpen ? (
+            <button
+              type="button"
+              onClick={() => onOpen(row.original.id)}
+              className={cn(
+                'inline-flex min-h-11 items-center rounded-control text-left font-semibold',
+                focusRing,
+              )}
+            >
+              {row.original.clientName}
+            </button>
+          ) : (
+            <Link
+              href={leadDetailsHref(row.original.id)}
+              className={cn(
+                'inline-flex min-h-11 items-center rounded-control font-semibold',
+                focusRing,
+              )}
+            >
+              {row.original.clientName}
+            </Link>
+          ),
       },
       {
         accessorKey: 'title',
-        header: 'Opportunity',
+        header: readOnly ? 'Inquiry' : 'Opportunity',
         cell: ({ row }) => (
           <div className="max-w-52 space-y-1">
             <p className="text-sm">{row.original.title}</p>
@@ -90,7 +139,6 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
           </div>
         ),
       },
-
       {
         id: 'owner',
         accessorFn: (lead) =>
@@ -118,7 +166,6 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
           </span>
         ),
       },
-
       {
         accessorKey: 'source',
         header: 'Source',
@@ -128,12 +175,10 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
         header: 'Priority',
         sortingFn: (left, right) => {
           const order = ['low', 'normal', 'high', 'urgent'];
-
           return order.indexOf(left.original.priority) - order.indexOf(right.original.priority);
         },
         cell: ({ row }) => <LeadPriorityBadge priority={row.original.priority} />,
       },
-
       {
         id: 'followUp',
         accessorFn: (lead) => lead.nextFollowUpOn ?? '',
@@ -154,7 +199,6 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
           );
         },
       },
-
       {
         id: 'actions',
         header: 'Actions',
@@ -162,18 +206,27 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
         enableHiding: false,
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <Link
-              href={leadDetailsHref(row.original.id)}
-              aria-label={'View details for ' + row.original.clientName}
-              className={buttonClassName({
-                variant: 'outline',
-                size: 'sm',
-              })}
-            >
-              View
-            </Link>
+            {onOpen ? (
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label={'View details for ' + row.original.clientName}
+                onClick={() => onOpen(row.original.id)}
+              >
+                View
+              </Button>
+            ) : (
+              <Link
+                href={leadDetailsHref(row.original.id)}
+                aria-label={'View details for ' + row.original.clientName}
+                className={buttonClassName({ variant: 'outline', size: 'sm' })}
+              >
+                View
+              </Link>
+            )}
 
             <IconButton
+              disabled={readOnly}
               label={'Preview follow-up for ' + row.original.clientName}
               icon={CalendarDays}
               variant="ghost"
@@ -189,7 +242,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
         ),
       },
     ],
-    [data.owners, data.asOfDate, announce],
+    [data.owners, data.asOfDate, announce, readOnly, onOpen, selection],
   );
 
   // TanStack Table uses mutable getters; this component explicitly opts out of memoization.
@@ -206,6 +259,9 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: readOnly,
+    manualSorting: readOnly,
+    enableSorting: !readOnly,
     autoResetPageIndex: true,
     initialState: {
       pagination: {
@@ -227,7 +283,11 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
             Leads table
           </h2>
           <p className="text-xs text-muted-foreground">
-            Scroll horizontally on smaller screens. Use column headings to sort.
+            {serverTable
+              ? 'Search, filters and sorting cover all matching leads you can view. Scroll horizontally on smaller screens.'
+              : readOnly
+                ? 'Current server page. Scroll horizontally on smaller screens.'
+                : 'Scroll horizontally on smaller screens. Use column headings to sort.'}
           </p>
         </div>
 
@@ -271,7 +331,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
 
       <div
         role="region"
-        aria-label="Scrollable demo leads table"
+        aria-label={readOnly ? 'Scrollable leads table' : 'Scrollable demo leads table'}
         tabIndex={0}
         className={cn(
           'min-w-0 overflow-x-auto rounded-card border border-border bg-card',
@@ -280,20 +340,29 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
       >
         <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
           <caption className="sr-only">
-            Fictional demo leads. Changes remain local to this tab.
+            {readOnly
+              ? 'Recorded leads visible to your account on the current server page.'
+              : 'Fictional demo leads. Changes remain local to this tab.'}
           </caption>
 
           <thead className="bg-muted">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const sorted = header.column.getIsSorted();
+                  const serverKey = serverSortColumns[header.column.id];
+                  const canSort = serverTable ? Boolean(serverKey) : header.column.getCanSort();
+                  const sorted = serverTable
+                    ? serverKey === serverTable.sort
+                      ? serverTable.direction
+                      : false
+                    : header.column.getIsSorted();
+
                   return (
                     <th
                       key={header.id}
                       scope="col"
                       aria-sort={
-                        header.column.getCanSort()
+                        canSort
                           ? sorted === 'asc'
                             ? 'ascending'
                             : sorted === 'desc'
@@ -303,10 +372,16 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
                       }
                       className="border-b border-border px-4 py-2 font-semibold"
                     >
-                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                      {header.isPlaceholder ? null : canSort ? (
                         <button
                           type="button"
-                          onClick={header.column.getToggleSortingHandler()}
+                          disabled={serverTable?.disabled}
+                          onClick={
+                            serverTable
+                              ? () =>
+                                  serverTable.onSort(serverKey, sorted === 'asc' ? 'desc' : 'asc')
+                              : header.column.getToggleSortingHandler()
+                          }
                           aria-label={
                             'Sort by ' + (columnLabels[header.column.id] ?? header.column.id)
                           }
@@ -349,7 +424,7 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
                   colSpan={table.getVisibleLeafColumns().length}
                   className="p-8 text-center text-muted-foreground"
                 >
-                  No sample leads match this view.
+                  {readOnly ? 'No leads on this page.' : 'No sample leads match this view.'}
                 </td>
               </tr>
             )}
@@ -357,48 +432,50 @@ export function LeadsTable({ leads }: { leads: DemoLead[] }) {
         </table>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-xs text-muted-foreground">
-          Showing {firstRow}–{lastRow} of {leads.length} sample leads
-        </p>
+      {!readOnly && (
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="text-xs text-muted-foreground">
+            Showing {firstRow}–{lastRow} of {leads.length} sample leads
+          </p>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="lead-table-page-size">Rows per page</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="lead-table-page-size">Rows per page</Label>
 
-            <NativeSelect
-              id="lead-table-page-size"
-              value={pageSize}
-              onChange={(event) => table.setPageSize(Number(event.target.value))}
-              className="w-20"
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-            </NativeSelect>
+              <NativeSelect
+                id="lead-table-page-size"
+                value={pageSize}
+                onChange={(event) => table.setPageSize(Number(event.target.value))}
+                className="w-20"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+              </NativeSelect>
+            </div>
+
+            <IconButton
+              label="Previous page"
+              icon={ChevronLeft}
+              variant="outline"
+              disabled={!table.getCanPreviousPage()}
+              onClick={() => table.previousPage()}
+            />
+
+            <span className="text-xs tabular-nums">
+              Page {pageIndex + 1} of {Math.max(1, table.getPageCount())}
+            </span>
+
+            <IconButton
+              label="Next page"
+              icon={ChevronRight}
+              variant="outline"
+              disabled={!table.getCanNextPage()}
+              onClick={() => table.nextPage()}
+            />
           </div>
-
-          <IconButton
-            label="Previous page"
-            icon={ChevronLeft}
-            variant="outline"
-            disabled={!table.getCanPreviousPage()}
-            onClick={() => table.previousPage()}
-          />
-
-          <span className="text-xs tabular-nums">
-            Page {pageIndex + 1} of {Math.max(1, table.getPageCount())}
-          </span>
-
-          <IconButton
-            label="Next page"
-            icon={ChevronRight}
-            variant="outline"
-            disabled={!table.getCanNextPage()}
-            onClick={() => table.nextPage()}
-          />
         </div>
-      </div>
+      )}
     </section>
   );
 }

@@ -2,11 +2,13 @@ import type { DemoChartPoint, DemoLead, DemoPeriod } from '@/types/demo-crm';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-export function formatDemoMoney(value: number): string {
+export function formatDemoMoney(value: number | null): string {
+  if (value === null) return 'Not provided';
+
   return (
     'AED ' +
     new Intl.NumberFormat('en-GB', {
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 2,
     }).format(value)
   );
 }

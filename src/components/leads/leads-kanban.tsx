@@ -12,18 +12,19 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 
-import { useDemoCrm } from '@/components/demo/demo-crm-provider';
+import { useLeadView, type LeadListItem } from '@/components/leads/lead-view-context';
 import { DraggableLeadCard, LeadDragPreview } from '@/components/leads/lead-card';
 import { Badge } from '@/components/ui/badge';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { DEMO_STAGES } from '@/lib/demo/stages';
 import { cn, focusRing } from '@/lib/utils';
-import type { DemoLead } from '@/types/demo-crm';
 
 type DemoColumn = (typeof DEMO_STAGES)[number];
 
-function KanbanColumn({ stage, leads }: { stage: DemoColumn; leads: readonly DemoLead[] }) {
+function KanbanColumn({ stage, leads }: { stage: DemoColumn; leads: readonly LeadListItem[] }) {
+  const { readOnly, pipeline, stageCounts } = useLeadView();
   const { setNodeRef, isOver } = useDroppable({
+    disabled: readOnly && !pipeline,
     id: 'stage-' + stage.id,
     data: { stage: stage.id },
   });
@@ -47,12 +48,21 @@ function KanbanColumn({ stage, leads }: { stage: DemoColumn; leads: readonly Dem
           <h3 id={'stage-heading-' + stage.id} className="text-sm font-semibold">
             {stage.label}
           </h3>
-          <Badge tone="outline">{leads.length}</Badge>
+
+          <Badge tone="outline">{stageCounts ? (stageCounts[stage.id] ?? 0) : leads.length}</Badge>
+
+          {stageCounts && (
+            <span className="sr-only">matching leads; {leads.length} loaded on this page</span>
+          )}
         </div>
 
         {stage.protected && (
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Protected outcome. Conversion is unavailable in this demo.
+            {pipeline && stage.id === 'lost'
+              ? 'Lost reasons and reopening are recorded in Lead information.'
+              : readOnly
+                ? 'Protected outcome. Conversion is unavailable.'
+                : 'Protected outcome. Conversion is unavailable in this demo.'}
           </p>
         )}
       </div>
@@ -62,7 +72,7 @@ function KanbanColumn({ stage, leads }: { stage: DemoColumn; leads: readonly Dem
           leads.map((lead) => <DraggableLeadCard key={lead.id} lead={lead} />)
         ) : (
           <p className="rounded-control border border-dashed border-input bg-card p-4 text-xs leading-relaxed text-muted-foreground">
-            No sample leads in this stage.
+            {readOnly ? 'No leads on this page in this stage.' : 'No sample leads in this stage.'}
           </p>
         )}
       </div>
@@ -70,8 +80,8 @@ function KanbanColumn({ stage, leads }: { stage: DemoColumn; leads: readonly Dem
   );
 }
 
-export function LeadsKanban({ leads }: { leads: readonly DemoLead[] }) {
-  const { moveLead, announce } = useDemoCrm();
+export function LeadsKanban({ leads }: { leads: readonly LeadListItem[] }) {
+  const { moveLead, announce, readOnly, pipeline, stageCounts } = useLeadView();
   const [activeId, setActiveId] = useState<string | null>(null);
   const reducedMotion = usePrefersReducedMotion();
 
@@ -90,11 +100,12 @@ export function LeadsKanban({ leads }: { leads: readonly DemoLead[] }) {
     const stage = DEMO_STAGES.find((item) => item.id === stageId);
 
     if (!stage) {
-      announce('Demo move cancelled. No stage changed.');
+      announce('Move cancelled. No stage changed.');
       return;
     }
 
-    moveLead(String(event.active.id), stage.id);
+    if (pipeline) pipeline.requestMove(String(event.active.id), stage.id);
+    else moveLead(String(event.active.id), stage.id);
   }
 
   return (
@@ -104,8 +115,13 @@ export function LeadsKanban({ leads }: { leads: readonly DemoLead[] }) {
       </h2>
 
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Drag a handle with a pointer, or use a card’s stage selector. Scroll horizontally to inspect
-        all stages.
+        {pipeline
+          ? stageCounts
+            ? 'Counts cover all matching leads you can view; cards are shown by page. Drag or select a working stage to review the change.'
+            : 'Current page only. Drag or select a stage to review and confirm a protected change. Lost and reopening are in Lead information.'
+          : readOnly
+            ? 'Current page only. Stage changes are disabled until the approved pipeline workflow is implemented.'
+            : 'Drag a handle with a pointer, or use a card’s stage selector. Scroll horizontally to inspect all stages.'}
       </p>
 
       <DndContext
@@ -123,7 +139,7 @@ export function LeadsKanban({ leads }: { leads: readonly DemoLead[] }) {
         }}
         onDragCancel={() => {
           setActiveId(null);
-          announce('Demo move cancelled.');
+          announce('Move cancelled.');
         }}
         onDragEnd={handleDragEnd}
       >

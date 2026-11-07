@@ -139,7 +139,7 @@ export function LeadDetailsPrototype({ leadId }: { leadId: string }) {
           description="This sample lead is not available in the current preview."
         />
 
-        <Link href="/leads" className={buttonClassName({ variant: 'outline' })}>
+        <Link href="/leads?preview=1" className={buttonClassName({ variant: 'outline' })}>
           Return to all leads
         </Link>
       </div>
@@ -175,7 +175,7 @@ export function LeadDetailsPrototype({ leadId }: { leadId: string }) {
 
       <nav aria-label="Lead navigation" className="flex flex-wrap items-center gap-3">
         <Link
-          href="/leads"
+          href="/leads?preview=1"
           className={buttonClassName({
             variant: 'outline',
             size: 'sm',
@@ -186,7 +186,7 @@ export function LeadDetailsPrototype({ leadId }: { leadId: string }) {
         </Link>
 
         <Link
-          href="/leads/pipeline"
+          href="/leads/pipeline?preview=1"
           className={buttonClassName({
             variant: 'ghost',
             size: 'sm',
