@@ -5,9 +5,11 @@ import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getApplicationOrigin } from '@/lib/supabase/server-config';
 import { createAttachmentWorkflow } from './workflow';
+import { z } from 'zod';
+import { attachmentPageSchema } from './contracts';
 
 // Local-only until a separate production security/deployment decision is approved.
-async function localWorkflow() {
+export async function getLocalAttachmentWorkflow() {
   const app = new URL(getApplicationOrigin());
   const config = readFileSync(resolve('supabase/config.toml'), 'utf8');
   if (
@@ -27,15 +29,47 @@ async function localWorkflow() {
   const admin = createClient('http://127.0.0.1:57421', key, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
-  return createAttachmentWorkflow(admin, data.user.id);
+  return {
+    ...createAttachmentWorkflow(admin, data.user.id),
+    async authorizeUpload(leadId: string) {
+      z.uuid().parse(leadId);
+      const attempt = await admin.rpc('crm_attachment_upload_attempt', {
+        p_actor: data.user.id,
+        p_lead_id: leadId,
+      });
+      if (attempt.error) {
+        if (attempt.error.code === '54000')
+          throw new Error('Upload attempt limit reached. Wait one minute.');
+        throw new Error('Your current account cannot upload to this lead.');
+      }
+    },
+    async list(leadId: string, page: number, removed: boolean) {
+      const result = await employee.rpc('crm_lead_attachments', {
+        p_lead_id: leadId,
+        p_page: page,
+        p_removed: removed,
+      });
+      if (result.error) {
+        if (result.error.code === '42501')
+          throw new Error('Your current account cannot access this lead.');
+        throw new Error('Attachment listing is unavailable.');
+      }
+      return attachmentPageSchema.parse(result.data);
+    },
+  };
 }
 
 export async function uploadLocalAttachment(input: unknown, bytes: Buffer) {
-  return (await localWorkflow()).upload(input, bytes);
+  const workflow = await getLocalAttachmentWorkflow();
+  const leadId = z.object({ leadId: z.uuid() }).parse(input).leadId;
+  await workflow.authorizeUpload(leadId);
+  return workflow.upload(input, bytes);
 }
+
 export async function downloadLocalAttachment(input: unknown) {
-  return (await localWorkflow()).download(input);
+  return (await getLocalAttachmentWorkflow()).download(input);
 }
+
 export async function removeLocalAttachment(input: unknown) {
-  return (await localWorkflow()).remove(input);
+  return (await getLocalAttachmentWorkflow()).remove(input);
 }

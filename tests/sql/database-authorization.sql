@@ -55,10 +55,12 @@ begin
     end if;
     if obj.nspname='public' and obj.proname like 'crm\_%' escape '\' then
       if has_function_privilege('authenticated',obj.oid,'EXECUTE') is distinct from
-           (obj.proname not in ('crm_bootstrap_super_admin','crm_reconcile_local_employee_invitation')) or
+           (obj.proname not in ('crm_bootstrap_super_admin','crm_reconcile_local_employee_invitation',
+             'crm_attachment_gateway','crm_attachment_upload_attempt')) or
          has_function_privilege('service_role',obj.oid,'EXECUTE') is distinct from
            (obj.proname in ('crm_bootstrap_super_admin','crm_reconcile_local_employee_invitation',
-             'crm_assign_user_role','crm_revoke_user_role','crm_get_role_account','crm_change_user_role')) then
+             'crm_assign_user_role','crm_revoke_user_role','crm_get_role_account','crm_change_user_role',
+             'crm_attachment_gateway','crm_attachment_upload_attempt')) then
         raise exception 'Existing RPC role contract changed: %',obj.proname;
       end if;
     end if;
