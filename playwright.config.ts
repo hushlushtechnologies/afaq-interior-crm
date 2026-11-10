@@ -23,6 +23,8 @@ const requiredTests = [
   'lead-details.spec.ts',
   'lead-detail-archive.spec.ts',
   'site-visits.spec.ts',
+  'lead-attachments.spec.ts',
+  'attachment-links.spec.ts',
 ];
 
 for (const file of requiredTests) {
@@ -83,6 +85,7 @@ export default defineConfig({
     url: `${baseURL}/login`,
     env: {
       APP_URL: baseURL,
+      ENABLE_LOCAL_LEAD_ATTACHMENTS: 'true',
     },
     reuseExistingServer: false,
     timeout: 180_000,

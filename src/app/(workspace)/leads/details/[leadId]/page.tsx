@@ -7,6 +7,7 @@ import { WorkspaceAccessDenied } from '@/components/access/workspace-access-deni
 import { PageHeader } from '@/components/layout/page-header';
 import { LeadDetailsPrototype } from '@/components/leads/lead-details-prototype';
 import { LeadDetailsWorkspace } from '@/components/leads/lead-details-workspace';
+import { LeadAttachments } from '@/components/leads/lead-attachments';
 import { buttonClassName } from '@/components/ui/button';
 import { hasCapability } from '@/features/access/permissions';
 import { getMyAccessState } from '@/features/access/server';
@@ -16,21 +17,33 @@ import { loadLeads } from '@/features/leads/actions';
 import { getDemoDataset } from '@/lib/demo/crm-fixtures';
 
 export const instant = false;
-type Props = { params: Promise<{ leadId: string }> };
+
+type Props = {
+  params: Promise<{ leadId: string }>;
+};
+
 export function generateStaticParams() {
   const dataset = getDemoDataset();
+
   return dataset
     ? dataset.leads.map((lead) => ({ leadId: lead.id }))
     : [{ leadId: 'preview-unavailable' }];
 }
-export const metadata: Metadata = { title: 'Lead details | Afaq Al Manzel' };
+
+export const metadata: Metadata = {
+  title: 'Lead details | Afaq Al Manzel',
+};
 
 export default async function LeadDetailsRoute({ params }: Props) {
   const access = await getMyAccessState();
+
   if (access.status === 'unavailable') return <AccessUnavailable />;
+
   if (!hasCapability(access.snapshot, 'leads.view'))
     return <WorkspaceAccessDenied snapshot={access.snapshot} workspaceTitle="Lead details" />;
+
   const { leadId } = await params;
+
   if (!z.uuid().safeParse(leadId).success) {
     if (
       process.env.NODE_ENV === 'development' &&
@@ -38,9 +51,16 @@ export default async function LeadDetailsRoute({ params }: Props) {
       getDemoDataset()?.leads.some((lead) => lead.id === leadId)
     )
       return <LeadDetailsPrototype leadId={leadId} />;
+
     notFound();
   }
-  const result = await loadLeads({ id: leadId, page: 0, archived: false });
+
+  const result = await loadLeads({
+    id: leadId,
+    page: 0,
+    archived: false,
+  });
+
   if (result.status === 'error')
     return (
       <div className="space-y-5">
@@ -57,18 +77,25 @@ export default async function LeadDetailsRoute({ params }: Props) {
         </Link>
       </div>
     );
+
   const lead = result.data.rows[0];
+
   if (!lead) notFound();
+
   const [requirements, room, note] = await Promise.all([
     loadLeadDetails({ leadId, kind: 'requirements', page: 0 }),
     loadLeadDetails({ leadId, kind: 'room', page: 0 }),
     loadLeadDetails({ leadId, kind: 'note', page: 0 }),
   ]);
+
   return (
-    <LeadDetailsWorkspace
-      key={`${lead.id}:${lead.version}`}
-      lead={lead}
-      initial={{ requirements, room, note }}
-    />
+    <>
+      <LeadDetailsWorkspace
+        key={`${lead.id}:${lead.version}`}
+        lead={lead}
+        initial={{ requirements, room, note }}
+      />
+      <LeadAttachments key={`attachments:${lead.id}`} lead={lead} />
+    </>
   );
 }
