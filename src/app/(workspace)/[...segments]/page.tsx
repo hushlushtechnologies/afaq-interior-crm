@@ -9,6 +9,8 @@ import { DashboardPrototype } from '@/components/dashboard/dashboard-prototype';
 import { EmployeeInvitationWorkspace } from '@/components/employees/employee-invitation-workspace';
 import { EmployeeDirectoryWorkspace } from '@/components/employees/employee-directory-workspace';
 import { loadEmployeeDirectory } from '@/features/employee/directory-actions';
+import { FollowUpWorkspace } from '@/components/leads/follow-up-workspace';
+import { loadFollowUps } from '@/features/follow-ups/actions';
 import { LeadsWorkspace } from '@/components/leads/leads-workspace';
 import { LeadRecordWorkspace } from '@/components/leads/lead-record-workspace';
 import { queryLeads } from '@/features/leads/query-actions';
@@ -79,6 +81,14 @@ export default async function WorkspaceRoute({ params, searchParams }: Workspace
   if (page.module.id === 'employees' && page.section.slug === '') {
     return (
       <EmployeeDirectoryWorkspace initial={await loadEmployeeDirectory({ search: '', page: 0 })} />
+    );
+  }
+
+  if (page.module.id === 'leads' && page.section.slug === 'follow-ups') {
+    return (
+      <FollowUpWorkspace
+        initial={await loadFollowUps({ leadId: null, page: 0, view: 'today', mine: true })}
+      />
     );
   }
 

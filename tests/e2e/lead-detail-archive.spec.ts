@@ -18,13 +18,16 @@ const test = base.extend<{ leads: LeadFixtures }>({
     }
   },
 });
+
 test.use({
   storageState: { cookies: [], origins: [] },
   trace: 'off',
   screenshot: 'off',
   video: 'off',
 });
+
 test.setTimeout(120_000);
+
 async function api(account: LocalTestAccount) {
   const client = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,6 +37,7 @@ async function api(account: LocalTestAccount) {
   expect(Boolean((await client.auth.signInWithPassword(account)).error)).toBe(false);
   return client;
 }
+
 async function seed(actor: LocalTestAccount, owner = actor.id) {
   const client = await api(actor);
   const created = await client.rpc('crm_save_lead', {
@@ -94,9 +98,14 @@ test('confirmation cancellation preserves the room; confirmed archive retains co
   ).toBeEnabled();
   await page.getByRole('button', { name: 'Show archived rooms', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Archive candidate', exact: true })).toBeVisible();
-  await expect(page.getByText('Retained evidence', { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole('region', { name: 'Rooms and scope', exact: true })
+      .getByText('Retained evidence', { exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Edit room', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Archive room', exact: true })).toHaveCount(0);
+
   const detail = await client.rpc('crm_archived_lead_details', {
     p_lead_id: lead.id,
     p_kind: 'room',
@@ -108,6 +117,7 @@ test('confirmation cancellation preserves the room; confirmed archive retains co
   expect(
     detail.data.events.filter((event: { action: string }) => event.action === 'archived'),
   ).toHaveLength(1);
+
   await page.reload();
   await page.getByRole('button', { name: 'Show archived rooms', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Archive candidate', exact: true })).toBeVisible();
@@ -122,6 +132,7 @@ test('stale archive rejects the operation without hiding a changed room', async 
   await signInLocalAccount(page, actor);
   await page.goto(`/leads/details/${lead.id}`);
   await page.getByRole('button', { name: 'Archive room', exact: true }).click();
+
   const changed = await client.rpc('crm_save_lead_detail', {
     p_input: {
       ...input,
@@ -131,12 +142,14 @@ test('stale archive rejects the operation without hiding a changed room', async 
     },
   });
   expect(Boolean(changed.error)).toBe(false);
+
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('button', { name: 'Confirm detail archive', exact: true }).click();
   await expect(dialog.getByRole('alert')).toContainText('record changed');
   await dialog.getByRole('button', { name: 'Cancel detail archive', exact: true }).click();
   await page.getByRole('button', { name: 'Reload room', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'New version room', exact: true })).toBeVisible();
+
   const archived = await client.rpc('crm_archived_lead_details', {
     p_lead_id: lead.id,
     p_kind: 'room',
@@ -154,6 +167,7 @@ test('uncertain archive keeps the same request and records one archive event', a
   await signInLocalAccount(page, actor);
   await page.goto(`/leads/details/${lead.id}`);
   await page.getByRole('button', { name: 'Archive room', exact: true }).click();
+
   const ids: string[] = [];
   await page.route('**/leads/details/**', async (route) => {
     const req = route.request();
@@ -165,6 +179,7 @@ test('uncertain archive keeps the same request and records one archive event', a
       await route.abort('failed');
     } else await route.continue();
   });
+
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('button', { name: 'Confirm detail archive', exact: true }).click();
   await expect(dialog.getByRole('alert')).toContainText('could not be confirmed');
@@ -177,6 +192,7 @@ test('uncertain archive keeps the same request and records one archive event', a
   await expect(dialog).toHaveCount(0);
   expect(ids).toHaveLength(2);
   expect(ids[0]).toBe(ids[1]);
+
   const detail = await client.rpc('crm_archived_lead_details', {
     p_lead_id: lead.id,
     p_kind: 'room',
@@ -195,10 +211,12 @@ test('Sales can read permitted archived rooms without acquiring archive permissi
   const actor = await leads.account();
   const sales = await leads.account('sales_executive');
   const { client, lead, input } = await seed(actor, sales.id);
+
   const archived = await client.rpc('crm_archive_lead_detail', {
     p_input: { requestId: randomUUID(), leadId: lead.id, recordId: input.recordId, version: 1 },
   });
   expect(Boolean(archived.error)).toBe(false);
+
   await signInLocalAccount(page, sales);
   await page.goto(`/leads/details/${lead.id}`);
   await page.getByRole('button', { name: 'Show archived rooms', exact: true }).click();

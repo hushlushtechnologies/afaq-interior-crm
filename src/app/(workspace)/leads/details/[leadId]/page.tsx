@@ -7,6 +7,9 @@ import { WorkspaceAccessDenied } from '@/components/access/workspace-access-deni
 import { PageHeader } from '@/components/layout/page-header';
 import { LeadDetailsPrototype } from '@/components/leads/lead-details-prototype';
 import { LeadDetailsWorkspace } from '@/components/leads/lead-details-workspace';
+import { LeadActivityTimeline } from '@/components/leads/lead-activity-timeline';
+import { LeadManualActivities } from '@/components/leads/lead-manual-activities';
+import { LeadFollowUps } from '@/components/leads/lead-follow-ups';
 import { LeadAttachments } from '@/components/leads/lead-attachments';
 import { buttonClassName } from '@/components/ui/button';
 import { hasCapability } from '@/features/access/permissions';
@@ -18,9 +21,7 @@ import { getDemoDataset } from '@/lib/demo/crm-fixtures';
 
 export const instant = false;
 
-type Props = {
-  params: Promise<{ leadId: string }>;
-};
+type Props = { params: Promise<{ leadId: string }> };
 
 export function generateStaticParams() {
   const dataset = getDemoDataset();
@@ -30,9 +31,7 @@ export function generateStaticParams() {
     : [{ leadId: 'preview-unavailable' }];
 }
 
-export const metadata: Metadata = {
-  title: 'Lead details | Afaq Al Manzel',
-};
+export const metadata: Metadata = { title: 'Lead details | Afaq Al Manzel' };
 
 export default async function LeadDetailsRoute({ params }: Props) {
   const access = await getMyAccessState();
@@ -55,11 +54,11 @@ export default async function LeadDetailsRoute({ params }: Props) {
     notFound();
   }
 
-  const result = await loadLeads({
-    id: leadId,
-    page: 0,
-    archived: false,
-  });
+  let result = await loadLeads({ id: leadId, page: 0, archived: false });
+
+  if (result.status === 'ok' && result.data.rows.length === 0) {
+    result = await loadLeads({ id: leadId, page: 0, archived: true });
+  }
 
   if (result.status === 'error')
     return (
@@ -95,6 +94,9 @@ export default async function LeadDetailsRoute({ params }: Props) {
         lead={lead}
         initial={{ requirements, room, note }}
       />
+      <LeadFollowUps key={`follow-ups:${lead.id}:${lead.version}`} lead={lead} />
+      <LeadManualActivities key={`activities:${lead.id}`} leadId={lead.id} />
+      <LeadActivityTimeline key={`timeline:${lead.id}`} leadId={lead.id} />
       <LeadAttachments key={`attachments:${lead.id}`} lead={lead} />
     </>
   );

@@ -104,11 +104,9 @@ test('desktop navigation, breadcrumbs, and sidebar controls work', async ({ page
   await page.getByRole('button', { name: /collapse/i }).click();
 
   await expect(sidebar).toHaveAttribute('aria-hidden', 'true');
-
   await expect(sidebar).toHaveAttribute('inert', '');
 
   await page.getByRole('button', { name: /expand/i }).click();
-
   await expect(sidebar).toBeVisible();
 });
 
@@ -192,7 +190,8 @@ test('tablet drawer closes when resized to desktop', async ({ page }) => {
 
 test('navigation search works with the keyboard shortcut', async ({ page }) => {
   await page.goto('/dashboard');
-  // A successful interaction establishes hydration before a window keyboard event.
+
+  // Establish hydration before dispatching a window keyboard event.
   await page.getByRole('button', { name: 'Search navigation', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Search navigation', exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
@@ -205,7 +204,6 @@ test('navigation search works with the keyboard shortcut', async ({ page }) => {
   });
 
   await expect(dialog).toBeVisible();
-
   await dialog.getByLabel('Find a page', { exact: true }).fill('Procurement');
 
   await dialog
@@ -233,7 +231,6 @@ test('profile displays the authenticated email and menus navigate', async ({ pag
   const profile = page.getByRole('menu');
 
   await expect(profile).toContainText(credentials.email);
-
   await expect(profile).not.toContainText('Development-only preview');
 
   await profile
@@ -252,18 +249,15 @@ test('profile displays the authenticated email and menus navigate', async ({ pag
     })
     .click();
 
-  const notifications = page.getByRole('menu');
+  const notifications = page.getByRole('dialog', { name: 'Follow-up reminders', exact: true });
 
-  await expect(notifications).toContainText('No live notifications are connected.');
+  await expect(notifications).toBeVisible();
+  await expect(
+    notifications.getByRole('button', { name: 'Refresh reminders', exact: true }),
+  ).toBeEnabled();
 
-  await notifications
-    .getByRole('menuitem', {
-      name: 'Notification settings',
-      exact: true,
-    })
-    .click();
-
-  await expect(page).toHaveURL(/\/settings\/notifications$/);
+  await notifications.getByRole('button', { name: 'Close dialog', exact: true }).click();
+  await expect(notifications).toHaveCount(0);
 });
 
 test('workspace details restores focus after closing', async ({ page }) => {

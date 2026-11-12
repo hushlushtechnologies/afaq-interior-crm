@@ -9,6 +9,7 @@ import {
 } from '../helpers/lead-fixtures';
 import { signInLocalAccount } from '../helpers/auth-browser';
 import { toDubaiInput } from '../../src/features/lead-visits/schemas';
+
 const test = base.extend<{ leads: LeadFixtures }>({
   leads: async ({ baseURL }, provide) => {
     const fixtures = createLeadFixtures(baseURL!);
@@ -19,13 +20,16 @@ const test = base.extend<{ leads: LeadFixtures }>({
     }
   },
 });
+
 test.use({
   storageState: { cookies: [], origins: [] },
   trace: 'off',
   screenshot: 'off',
   video: 'off',
 });
+
 test.setTimeout(120_000);
+
 async function api(account: LocalTestAccount) {
   const client = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,7 +39,9 @@ async function api(account: LocalTestAccount) {
   expect(Boolean((await client.auth.signInWithPassword(account)).error)).toBe(false);
   return client;
 }
+
 type Client = Awaited<ReturnType<typeof api>>;
+
 async function seedLead(client: Client, owner: string) {
   const result = await client.rpc('crm_save_lead', {
     p_request_id: randomUUID(),
@@ -53,6 +59,7 @@ async function seedLead(client: Client, owner: string) {
   expect(Boolean(result.error)).toBe(false);
   return result.data.lead;
 }
+
 async function seedVisit(client: Client, leadId: string, owner: string | null = null) {
   const input = {
     command: 'create',
@@ -73,6 +80,7 @@ async function seedVisit(client: Client, leadId: string, owner: string | null = 
   expect(Boolean(result.error)).toBe(false);
   return input;
 }
+
 test('visits create, edit, complete and cancel with retained history and Dubai time', async ({
   page,
   leads,
@@ -83,6 +91,7 @@ test('visits create, edit, complete and cancel with retained history and Dubai t
   await signInLocalAccount(page, actor);
   await page.goto(`/leads/details/${lead.id}`);
   await page.getByRole('button', { name: 'Add site visit', exact: true }).click();
+
   const dialog = page.getByRole('dialog');
   await dialog
     .getByLabel('Scheduled visit time (Dubai)', { exact: true })
@@ -92,12 +101,14 @@ test('visits create, edit, complete and cancel with retained history and Dubai t
   await dialog.getByRole('button', { name: 'Save visit', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Edit site visit', exact: true })).toBeEnabled();
+
   await page.getByRole('button', { name: 'Edit site visit', exact: true }).click();
   await dialog
     .getByLabel('Visit measurements (unverified)', { exact: true })
     .fill('Approximate 4 x 5 m');
   await dialog.getByRole('button', { name: 'Save visit', exact: true }).click();
   await expect(dialog).toHaveCount(0);
+
   await expect(
     page.getByRole('button', { name: 'Complete site visit', exact: true }),
   ).toBeEnabled();
@@ -112,8 +123,13 @@ test('visits create, edit, complete and cancel with retained history and Dubai t
     .fill('Measurements and access confirmed');
   await dialog.getByRole('button', { name: 'Save visit', exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByText('completed', { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole('region', { name: 'Site visits', exact: true })
+      .getByText('completed', { exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Edit site visit', exact: true })).toHaveCount(0);
+
   await page.getByRole('button', { name: 'Add site visit', exact: true }).click();
   await dialog
     .getByLabel('Scheduled visit time (Dubai)', { exact: true })
@@ -121,13 +137,19 @@ test('visits create, edit, complete and cancel with retained history and Dubai t
   await dialog.getByRole('button', { name: 'Save visit', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Cancel site visit', exact: true })).toBeEnabled();
+
   await page.getByRole('button', { name: 'Cancel site visit', exact: true }).click();
   await dialog.getByLabel('Cancellation reason', { exact: true }).fill('Customer postponed access');
   await dialog.getByRole('button', { name: 'Save visit', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await page.reload();
-  await expect(page.getByText('cancelled', { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole('region', { name: 'Site visits', exact: true })
+      .getByText('cancelled', { exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Edit site visit', exact: true })).toHaveCount(0);
+
   const result = await client.rpc('crm_site_visits', { p_lead_id: lead.id, p_page: 0 });
   expect(result.data.total).toBe(2);
   expect(
@@ -143,6 +165,7 @@ test('visits create, edit, complete and cancel with retained history and Dubai t
       .violations,
   ).toEqual([]);
 });
+
 test('owner changes flag planned assignments without changing finalized history', async ({
   page,
   leads,
@@ -154,6 +177,7 @@ test('owner changes flag planned assignments without changing finalized history'
   const lead = await seedLead(client, oldOwner.id);
   const planned = await seedVisit(client, lead.id, oldOwner.id);
   const finished = await seedVisit(client, lead.id, oldOwner.id);
+
   const completed = await client.rpc('crm_save_site_visit', {
     p_input: {
       ...finished,
@@ -167,6 +191,7 @@ test('owner changes flag planned assignments without changing finalized history'
     },
   });
   expect(Boolean(completed.error)).toBe(false);
+
   const assigned = await client.rpc('crm_save_lead', {
     p_request_id: randomUUID(),
     p_command: 'assign',
@@ -175,8 +200,10 @@ test('owner changes flag planned assignments without changing finalized history'
     p_data: { assigned_user_id: owner.id },
   });
   expect(Boolean(assigned.error)).toBe(false);
+
   await signInLocalAccount(page, actor);
   await page.goto(`/leads/details/${lead.id}`);
+
   const card = page.getByTestId(`visit-${planned.visitId}`);
   await expect(card.getByRole('status')).toContainText('Assignment requires review');
   await card.getByRole('button', { name: 'Edit site visit', exact: true }).click();
@@ -185,6 +212,7 @@ test('owner changes flag planned assignments without changing finalized history'
   await dialog.getByRole('button', { name: 'Save visit', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(card.getByRole('status')).toHaveCount(0);
+
   const result = await client.rpc('crm_site_visits', { p_lead_id: lead.id, p_page: 0 });
   const active = result.data.rows.find((visit: { id: string }) => visit.id === planned.visitId);
   expect(active.assigned_user_id).toBe(owner.id);
@@ -193,6 +221,7 @@ test('owner changes flag planned assignments without changing finalized history'
   expect(historic.assigned_user_id).toBe(oldOwner.id);
   expect(historic.needs_assignment_review).toBe(false);
 });
+
 test('uncertain visit creation retries its original identity and creates one visit', async ({
   page,
   leads,
@@ -203,10 +232,12 @@ test('uncertain visit creation retries its original identity and creates one vis
   await signInLocalAccount(page, actor);
   await page.goto(`/leads/details/${lead.id}`);
   await page.getByRole('button', { name: 'Add site visit', exact: true }).click();
+
   const dialog = page.getByRole('dialog');
   await dialog
     .getByLabel('Scheduled visit time (Dubai)', { exact: true })
     .fill(toDubaiInput(new Date(Date.now() + 86400000).toISOString()));
+
   const ids: string[] = [];
   await page.route('**/leads/details/**', async (route) => {
     const req = route.request();
@@ -218,6 +249,7 @@ test('uncertain visit creation retries its original identity and creates one vis
       await route.abort('failed');
     } else await route.continue();
   });
+
   await dialog.getByRole('button', { name: 'Save visit', exact: true }).click();
   await expect(dialog.getByRole('alert')).toContainText('could not be confirmed');
   await expect(dialog.getByLabel('Scheduled visit time (Dubai)', { exact: true })).toBeDisabled();
@@ -230,10 +262,12 @@ test('uncertain visit creation retries its original identity and creates one vis
   await expect(dialog).toHaveCount(0);
   expect(ids).toHaveLength(2);
   expect(ids[0]).toBe(ids[1]);
+
   const result = await client.rpc('crm_site_visits', { p_lead_id: lead.id, p_page: 0 });
   expect(result.data.total).toBe(1);
   expect(result.data.events).toHaveLength(1);
 });
+
 test('stale visit editing cannot overwrite another session', async ({ page, leads }) => {
   const actor = await leads.account();
   const client = await api(actor);
@@ -242,6 +276,7 @@ test('stale visit editing cannot overwrite another session', async ({ page, lead
   await signInLocalAccount(page, actor);
   await page.goto(`/leads/details/${lead.id}`);
   await page.getByRole('button', { name: 'Edit site visit', exact: true }).click();
+
   const changed = await client.rpc('crm_save_site_visit', {
     p_input: {
       ...visit,
@@ -252,14 +287,20 @@ test('stale visit editing cannot overwrite another session', async ({ page, lead
     },
   });
   expect(Boolean(changed.error)).toBe(false);
+
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Visit notes', { exact: true }).fill('Stale note');
   await dialog.getByRole('button', { name: 'Save visit', exact: true }).click();
   await expect(dialog.getByRole('alert')).toContainText('visit changed');
   await dialog.getByRole('button', { name: 'Cancel visit editing', exact: true }).click();
   await page.getByRole('button', { name: 'Reload site visits', exact: true }).click();
-  await expect(page.getByText('Other session visit', { exact: false })).toBeVisible();
+  await expect(
+    page
+      .getByRole('region', { name: 'Site visits', exact: true })
+      .getByText('Other session visit', { exact: false }),
+  ).toBeVisible();
 });
+
 test('Management reads visits while unrelated Sales cannot see their lead', async ({
   page,
   leads,
@@ -272,10 +313,16 @@ test('Management reads visits while unrelated Sales cannot see their lead', asyn
   const client = await api(actor);
   const lead = await seedLead(client, actor.id);
   await seedVisit(client, lead.id);
+
   await signInLocalAccount(page, manager);
   await page.goto(`/leads/details/${lead.id}`);
-  await expect(page.getByText('Permitted visit evidence', { exact: false })).toBeVisible();
+  await expect(
+    page
+      .getByRole('region', { name: 'Site visits', exact: true })
+      .getByText('Permitted visit evidence', { exact: false }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add site visit', exact: true })).toHaveCount(0);
+
   const context = await browser.newContext({ baseURL, storageState: { cookies: [], origins: [] } });
   try {
     const hidden = await context.newPage();
@@ -289,6 +336,7 @@ test('Management reads visits while unrelated Sales cannot see their lead', asyn
     await context.close();
   }
 });
+
 test('visit pagination and Lost/archive read-only states retain records', async ({
   page,
   leads,
@@ -297,6 +345,7 @@ test('visit pagination and Lost/archive read-only states retain records', async 
   const client = await api(actor);
   const lead = await seedLead(client, actor.id);
   for (let i = 0; i < 21; i++) await seedVisit(client, lead.id);
+
   await signInLocalAccount(page, actor);
   await page.goto(`/leads/details/${lead.id}`);
   await expect(page.getByRole('status').filter({ hasText: 'Site visits page 1:' })).toHaveText(
@@ -306,6 +355,7 @@ test('visit pagination and Lost/archive read-only states retain records', async 
   await expect(page.getByRole('status').filter({ hasText: 'Site visits page 2:' })).toHaveText(
     'Site visits page 2: 1 of 21',
   );
+
   const lost = await client.rpc('crm_transition_lead', {
     p_request_id: randomUUID(),
     p_lead_id: lead.id,
@@ -314,11 +364,13 @@ test('visit pagination and Lost/archive read-only states retain records', async 
     p_data: { reasonCode: 'cancelled' },
   });
   expect(Boolean(lost.error)).toBe(false);
+
   await page.reload();
   await expect(page.getByRole('status').filter({ hasText: 'Site visits page 1:' })).toHaveText(
     'Site visits page 1: 20 of 21',
   );
   await expect(page.getByRole('button', { name: 'Edit site visit', exact: true })).toHaveCount(0);
+
   const reopened = await client.rpc('crm_transition_lead', {
     p_request_id: randomUUID(),
     p_lead_id: lead.id,
@@ -327,6 +379,7 @@ test('visit pagination and Lost/archive read-only states retain records', async 
     p_data: { reason: 'Local resumption' },
   });
   expect(Boolean(reopened.error)).toBe(false);
+
   const archived = await client.rpc('crm_save_lead', {
     p_request_id: randomUUID(),
     p_command: 'archive',
@@ -335,6 +388,7 @@ test('visit pagination and Lost/archive read-only states retain records', async 
     p_data: {},
   });
   expect(Boolean(archived.error)).toBe(false);
+
   await page.reload();
   await expect(page.getByRole('status').filter({ hasText: 'Site visits page 1:' })).toHaveText(
     'Site visits page 1: 20 of 21',

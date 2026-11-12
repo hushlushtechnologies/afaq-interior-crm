@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import {
-  Bell,
   ChevronDown,
   ChevronRight,
   PanelLeftClose,
@@ -11,6 +10,7 @@ import {
   UserRound,
 } from 'lucide-react';
 
+import { FollowUpNotifications } from '@/components/shell/follow-up-notifications';
 import { MobileNavigation } from '@/components/shell/mobile-navigation';
 import { NavigationSearch } from '@/components/shell/navigation-search';
 import { ShellMenu, ShellMenuLink, ShellMenuSeparator } from '@/components/shell/shell-menu';
@@ -101,23 +101,7 @@ export function WorkspaceHeader({
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <NavigationSearch />
 
-          <ShellMenu
-            label="Notification actions"
-            trigger={<IconButton label="Open notifications" icon={Bell} variant="ghost" />}
-            header={
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">Notifications</p>
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  No live notifications are connected.
-                </p>
-              </div>
-            }
-          >
-            <ShellMenuLink href="/settings/notifications">
-              <Icon icon={Bell} size="sm" />
-              Notification settings
-            </ShellMenuLink>
-          </ShellMenu>
+          <FollowUpNotifications />
 
           <ShellMenu
             label="Profile actions"
