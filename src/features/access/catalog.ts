@@ -32,6 +32,7 @@ export const PERMISSION_LABELS = {
   'dashboard.view': 'View dashboard',
 
   'leads.view': 'View leads',
+  'leads.export': 'Export permitted lead records',
   'leads.create': 'Create leads',
   'leads.update': 'Update leads',
   'leads.assign': 'Assign leads',

@@ -24,6 +24,7 @@ export const WORKSPACE_MODULES: readonly WorkspaceModule[] = [
       { slug: '', title: 'All leads' },
       { slug: 'pipeline', title: 'Sales pipeline' },
       { slug: 'follow-ups', title: 'Follow-ups' },
+      { slug: 'imports', title: 'Import CSV' },
     ],
   },
   {
@@ -170,7 +171,6 @@ export function getWorkspacePage(segments: readonly string[]): WorkspacePage | n
   }
 
   const sectionSlug = segments[1] ?? '';
-
   const section = workspaceModule.sections.find((item) => item.slug === sectionSlug);
 
   if (!section) {

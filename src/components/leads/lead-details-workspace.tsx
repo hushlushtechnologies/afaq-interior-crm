@@ -417,8 +417,8 @@ export function LeadDetailsWorkspace({
               Requirement completion does not approve a quotation or create a project.
             </p>
             <p className="mt-3 text-sm text-muted-foreground">
-              The follow-up date records intent; reminders are separate. Private attachments are not
-              connected in this part.
+              The intake follow-up date records intent. Scheduled follow-ups and private attachments
+              use their dedicated sections below.
             </p>
           </DetailSection>
         </aside>

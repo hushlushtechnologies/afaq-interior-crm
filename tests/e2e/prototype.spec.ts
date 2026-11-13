@@ -9,7 +9,7 @@ async function openDemo(page: Page, pathname: string) {
 }
 
 test('dashboard date range changes the sample inquiry count', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('/dashboard?preview=1');
 
   const count = page.getByTestId('dashboard-lead-count');
   const period = page.getByLabel('Dashboard date range', {
@@ -26,7 +26,7 @@ test('dashboard date range changes the sample inquiry count', async ({ page }) =
 });
 
 test('dashboard supports simulated error and empty states', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('/dashboard?preview=1');
 
   const previewState = page.getByLabel('Preview state', {
     exact: true,

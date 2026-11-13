@@ -1,4 +1,18 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+async function expectNoIndex(page: Page) {
+  // Next.js can stream matching metadata into the body as well as the head.
+  await expect
+    .poll(async () => {
+      const directives = await page
+        .locator('meta[name="robots"]')
+        .evaluateAll((tags) =>
+          tags.map((tag) => (tag.getAttribute('content') ?? '').toLowerCase().split(/[\s,]+/)),
+        );
+      return directives.length > 0 && directives.every((tokens) => tokens.includes('noindex'));
+    })
+    .toBe(true);
+}
 
 test('home opens the workspace without a development identity', async ({ page }) => {
   const errors: string[] = [];
@@ -39,7 +53,7 @@ test('unknown address returns a not-found response', async ({ page }) => {
   const response = await page.goto('/this-page-does-not-exist');
 
   expect([200, 404]).toContain(response?.status());
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expectNoIndex(page);
   await expect(page.getByText('This page could not be found.', { exact: true })).toBeVisible();
 
   await expect(page.getByText('This page could not be found.', { exact: true })).toBeVisible();
@@ -49,7 +63,7 @@ test('unknown module subsection returns a not-found response', async ({ page }) 
   const response = await page.goto('/leads/this-section-does-not-exist');
 
   expect([200, 404]).toContain(response?.status());
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expectNoIndex(page);
   await expect(page.getByText('This page could not be found.', { exact: true })).toBeVisible();
 });
 

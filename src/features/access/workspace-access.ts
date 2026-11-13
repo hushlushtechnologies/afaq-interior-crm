@@ -39,6 +39,13 @@ export function getWorkspaceRequirement(page: WorkspacePage): WorkspaceRequireme
 }
 
 export function canOpenWorkspacePage(snapshot: AccessSnapshot, page: WorkspacePage): boolean {
+  if (
+    page.module.id === 'leads' &&
+    page.section.slug === 'imports' &&
+    !hasCapability(snapshot, 'leads.create')
+  )
+    return false;
+
   const requirement = getWorkspaceRequirement(page);
 
   if (requirement.superAdminOnly && !snapshot.roles.includes('super_admin')) return false;

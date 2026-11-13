@@ -35,7 +35,33 @@ export function createLeadFixtures(baseURL: string) {
             'ON_ERROR_STOP=1',
           ],
           {
-            input: `BEGIN; DELETE FROM crm_sales.follow_up_reminders WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.sales_requests WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.follow_up_events WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.manual_activities WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.follow_ups WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.attachment_link_requests WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.attachment_link_events WHERE link_id IN (SELECT id FROM crm_sales.attachment_links WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}))); DELETE FROM crm_sales.attachment_links WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.attachment_upload_windows WHERE actor_id IN (${values}); DELETE FROM crm_sales.attachment_events WHERE attachment_id IN (SELECT id FROM crm_sales.attachments WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}))); DELETE FROM crm_sales.attachments WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.visit_requests WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.visit_events WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.site_visits WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.detail_requests WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.detail_events WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.detail_records WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.bulk_assignment_requests WHERE actor_id IN (${values}); UPDATE crm_sales.leads SET stage='new',current_loss_id=null WHERE created_by IN (${values}); DELETE FROM crm_sales.losses WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.requests WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.events WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})); DELETE FROM crm_sales.leads WHERE created_by IN (${values}); COMMIT;`,
+            input: `BEGIN;
+SELECT pg_advisory_xact_lock(90310001::bigint);
+DELETE FROM crm_sales.export_events WHERE actor_id IN (${values});
+DELETE FROM crm_sales.follow_up_reminders WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.sales_requests WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.follow_up_events WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.manual_activities WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.follow_ups WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.attachment_link_requests WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.attachment_link_events WHERE link_id IN (SELECT id FROM crm_sales.attachment_links WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})));
+DELETE FROM crm_sales.attachment_links WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.attachment_upload_windows WHERE actor_id IN (${values});
+DELETE FROM crm_sales.attachment_events WHERE attachment_id IN (SELECT id FROM crm_sales.attachments WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values})));
+DELETE FROM crm_sales.attachments WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.visit_requests WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.visit_events WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.site_visits WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.detail_requests WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.detail_events WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.detail_records WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.bulk_assignment_requests WHERE actor_id IN (${values});
+UPDATE crm_sales.leads SET stage='new',current_loss_id=null WHERE created_by IN (${values});
+DELETE FROM crm_sales.losses WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.requests WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.events WHERE lead_id IN (SELECT id FROM crm_sales.leads WHERE created_by IN (${values}));
+DELETE FROM crm_sales.leads WHERE created_by IN (${values});
+COMMIT;`,
             stdio: ['pipe', 'pipe', 'pipe'],
           },
         );

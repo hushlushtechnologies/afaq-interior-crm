@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { LeadExportButton } from '@/components/leads/lead-export-button';
 import { FormField } from '@/components/forms/form-field';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
@@ -248,6 +249,7 @@ export function LeadQueryControls({
           Clear lead filters
         </Button>
       </div>
+      <LeadExportButton query={query} disabled={disabled} />
     </form>
   );
 }

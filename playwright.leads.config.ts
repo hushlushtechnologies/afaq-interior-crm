@@ -1,9 +1,8 @@
-import { defineConfig } from '@playwright/test';
 import config from './playwright.config';
-
+import { defineConfig } from '@playwright/test';
 export default defineConfig({
   ...config,
-  testMatch: ['lead-details.spec.ts', 'lead-detail-archive.spec.ts'],
-  outputDir: 'test-results/lead-details',
+  testMatch: ['leads-crud.spec.ts'],
+  outputDir: 'test-results/leads',
   retries: 0,
 });
