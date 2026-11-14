@@ -61,6 +61,8 @@ export type LeadFields = z.infer<typeof leadFieldsSchema>;
 
 export const leadRowSchema = leadFieldsSchema.omit({ budget: true }).extend({
   assigned_name: z.string().nullable().optional(),
+  capture_execution_id: z.uuid().nullable().optional(),
+  created_actor_kind: z.enum(['employee', 'integration']).optional(),
   id: z.uuid(),
   reference: z.number().int().positive(),
   budget: z.number().nonnegative().nullable(),

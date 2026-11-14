@@ -79,6 +79,7 @@ export const PERMISSION_LABELS = {
   'reports.view': 'View permitted reports',
   'employees.view': 'View permitted employee information',
   'settings.view': 'View permitted settings',
+  'integrations.manage': 'Manage approved local lead integrations',
 
   'access.roles.manage': 'Assign and remove employee roles',
 } as const;
