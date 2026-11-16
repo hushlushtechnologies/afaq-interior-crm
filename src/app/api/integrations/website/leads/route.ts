@@ -1,0 +1,1 @@
+export { POST } from '../../../integration/website/leads/route';

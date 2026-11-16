@@ -1,5 +1,8 @@
 import { captureBody, receiveWebsite } from '@/features/lead-capture/workflow';
 import { captureFailure, captureJson } from '@/features/lead-capture/http';
+
+
+
 export async function POST(request: Request) {
   try {
     const url = new URL(request.url);
@@ -16,3 +19,5 @@ export async function POST(request: Request) {
     return captureFailure(error);
   }
 }
+
+

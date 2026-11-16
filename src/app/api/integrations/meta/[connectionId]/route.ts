@@ -1,0 +1,1 @@
+export { GET, POST } from '../../../integration/meta/[connectionId]/route';
