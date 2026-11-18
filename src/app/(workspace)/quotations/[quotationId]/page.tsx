@@ -7,6 +7,9 @@ import { WorkspaceAccessDenied } from '@/components/access/workspace-access-deni
 import { PageHeader } from '@/components/layout/page-header';
 import { QuotationBuilder } from '@/components/quotations/quotation-builder';
 import { QuotationHistory } from '@/components/quotations/quotation-history';
+import { QuotationDraftPdf } from '@/components/quotations/quotation-draft-pdf';
+import { QuotationConcepts } from '@/components/quotations/quotation-concepts';
+import { loadConceptWorkspace } from '@/features/quotations/concept-actions';
 import { WorkspacePlaceholder } from '@/components/workspace/workspace-placeholder';
 import { buttonClassName } from '@/components/ui/button';
 import { hasCapability } from '@/features/access/permissions';
@@ -114,6 +117,20 @@ export default async function QuotationPage({ params, searchParams }: Props) {
   const history =
     record?.status === 'ok' ? await loadQuotationHistory({ id: record.data.id, page: 0 }) : null;
 
+  const concepts =
+    record?.status === 'ok' &&
+    hasCapability(access.snapshot, 'leads.view') &&
+    process.env.ENABLE_LOCAL_QUOTATION_CONCEPTS === 'true' &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL === 'http://127.0.0.1:57421'
+      ? await loadConceptWorkspace({
+          id: record.data.id,
+          revision: record.data.revision,
+          page: 0,
+          archived: false,
+          imagePage: 0,
+        })
+      : null;
+
   return (
     <>
       <QuotationBuilder
@@ -139,6 +156,25 @@ export default async function QuotationPage({ params, searchParams }: Props) {
           key={`history:${record.data.id}:${record.data.version}`}
           id={record.data.id}
           initial={history}
+        />
+      )}
+      {record?.status === 'ok' &&
+        process.env.ENABLE_LOCAL_QUOTATION_PDFS === 'true' &&
+        process.env.NEXT_PUBLIC_SUPABASE_URL === 'http://127.0.0.1:57421' && (
+          <QuotationDraftPdf
+            key={`pdf:${record.data.id}:${record.data.version}`}
+            id={record.data.id}
+            version={record.data.version}
+          />
+        )}
+      {record?.status === 'ok' && concepts && (
+        <QuotationConcepts
+          key={`concepts:${record.data.id}:${record.data.revision}:${record.data.version}`}
+          id={record.data.id}
+          revision={record.data.revision}
+          rooms={context.data.rooms}
+          roomsTruncated={context.data.roomsTruncated}
+          initial={concepts}
         />
       )}
     </>
